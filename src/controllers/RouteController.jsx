@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "../views/pages/LoginPage";
+import RegisterPage from "../views/pages/RegisterPage";
 import AdminDashboard from "../views/pages/AdminDashboard";
 import GuruDashboard from "../views/pages/GuruDashboard";
 import SiswaDashboard from "../views/pages/SiswaDashboard";
@@ -10,6 +11,7 @@ export default function RouteController() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route
           path="/admin"
           element={

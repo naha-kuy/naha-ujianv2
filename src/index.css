@@ -93,6 +93,44 @@ body {
   transform: translateY(0);
 }
 
+.btn-login:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.success-msg {
+  background: #d4edda;
+  color: #155724;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.login-footer {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #eee;
+  text-align: center;
+}
+
+.login-footer p {
+  font-size: 13px;
+  color: #888;
+}
+
+.login-footer a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}
+
 .error-msg {
   background: #fce4e4;
   color: #cc0033;

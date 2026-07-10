@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { login } from "../../controllers/AuthController";
 
 const roleColors = {
@@ -18,14 +18,17 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState(null);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    const result = login(username, password);
+    const result = await login(username, password);
+    setLoading(false);
     if (result.success) {
       navigate(`/${result.user.role}`);
     } else {
@@ -75,8 +78,16 @@ export default function LoginPage() {
 
           {error && <div className="error-msg">{error}</div>}
 
-          <button type="submit" className="btn-login">Masuk</button>
+          <button type="submit" className="btn-login" disabled={loading}>
+            {loading ? "Memproses..." : "Masuk"}
+          </button>
         </form>
+
+        <div className="login-footer">
+          <p>
+            Belum punya akun? <Link to="/register">Daftar di sini</Link>
+          </p>
+        </div>
 
         <div className="role-selector">
           <p>Pilih角色 untuk login cepat:</p>
