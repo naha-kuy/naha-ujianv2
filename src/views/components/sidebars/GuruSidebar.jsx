@@ -6,9 +6,10 @@ import Icon from "../Icon";
 const menus = [
   { label: "Dashboard", path: "/guru", icon: "dashboard" },
   { label: "Bank Soal", path: "/guru/bank-soal", icon: "document" },
-  { label: "Butir Soal", path: "/guru/butir-soal", icon: "page" },
   { label: "Hasil", path: "/guru/hasil", icon: "chart" },
-  { label: "Perangkat", path: "/guru/perangkat", icon: "monitor" },
+  { label: "Upload Gambar", path: "/guru/upload-gambar", icon: "image" },
+  { label: "Perangkat", path: "/guru/perangkat", icon: "smartphone" },
+  { label: "Notifikasi", path: "/guru/notifikasi", icon: "bell" },
   { label: "Profil", path: "/guru/profil", icon: "person" },
 ];
 

@@ -6,10 +6,16 @@ import Icon from "../Icon";
 const menus = [
   { label: "Dashboard", path: "/admin", icon: "dashboard" },
   { label: "Guru", path: "/admin/guru", icon: "people" },
-  { label: "Siswa", path: "/admin/siswa", icon: "people" },
+  { label: "Siswa", path: "/admin/siswa", icon: "person" },
+  { label: "Import Siswa", path: "/admin/import-siswa", icon: "upload" },
   { label: "Bank Soal", path: "/admin/bank-soal", icon: "document" },
-  { label: "Monitoring", path: "/admin/monitoring", icon: "monitor" },
+  { label: "Perangkat", path: "/admin/perangkat", icon: "smartphone" },
+  { label: "Monitoring", path: "/admin/monitoring", icon: "eye" },
+  { label: "Online", path: "/admin/online", icon: "map" },
   { label: "Hasil", path: "/admin/hasil", icon: "chart" },
+  { label: "Kartu Peserta", path: "/admin/kartu", icon: "card" },
+  { label: "Upload Gambar", path: "/admin/upload-gambar", icon: "image" },
+  { label: "Notifikasi", path: "/admin/notifikasi", icon: "bell" },
   { label: "Pengaturan", path: "/admin/pengaturan", icon: "gear" },
 ];
 

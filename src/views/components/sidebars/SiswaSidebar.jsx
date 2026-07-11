@@ -7,7 +7,8 @@ const menus = [
   { label: "Dashboard", path: "/siswa", icon: "dashboard" },
   { label: "Ujian", path: "/siswa/ujian", icon: "books" },
   { label: "Hasil", path: "/siswa/hasil", icon: "chart" },
-  { label: "Perangkat", path: "/siswa/perangkat", icon: "monitor" },
+  { label: "Perangkat", path: "/siswa/perangkat", icon: "smartphone" },
+  { label: "Notifikasi", path: "/siswa/notifikasi", icon: "bell" },
   { label: "Profil", path: "/siswa/profil", icon: "person" },
 ];
 

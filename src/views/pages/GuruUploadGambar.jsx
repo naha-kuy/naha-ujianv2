@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, logout } from "../../controllers/AuthController";
 import { uploadImage, getImageList, deleteImage } from "../../controllers/ExamController";
-import AdminSidebar from "../components/sidebars/AdminSidebar";
+import GuruSidebar from "../components/sidebars/GuruSidebar";
 import Icon from "../components/Icon";
 
-export default function AdminUploadGambar() {
+export default function GuruUploadGambar() {
   const user = getCurrentUser();
   const navigate = useNavigate();
   const handleLogout = () => { logout(); navigate("/"); };
@@ -61,7 +61,7 @@ export default function AdminUploadGambar() {
 
   return (
     <div className="dash-layout">
-      <AdminSidebar userName={user?.name} onLogout={handleLogout} />
+      <GuruSidebar userName={user?.name} onLogout={handleLogout} />
       <main className="dash-main">
         <div className="dash-content">
           {error && (

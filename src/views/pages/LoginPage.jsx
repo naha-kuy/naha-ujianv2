@@ -259,12 +259,7 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className={`t-card ${view === "register" ? "register-open" : ""} ${loading ? "t-card-loading" : ""}`} ref={cardRef}>
-          {loading && (
-            <div className="t-card-overlay">
-              <div className="t-spinner" />
-            </div>
-          )}
+        <div className={`t-card ${view === "register" ? "register-open" : ""}`} ref={cardRef}>
 
           {/* LOGIN VIEW */}
           {view === "login" && (
@@ -323,7 +318,7 @@ export default function LoginPage() {
               )}
 
               <div className="t-divider">
-                <hr /><span>klik tuas merah di bawah untuk masuk</span><hr />
+                <hr /><span>klik tuas merah untuk masuk</span><hr />
               </div>
               <div className="t-toggle-link">
                 Belum punya akun? <span onClick={() => switchView("register")}>Daftar</span>
@@ -445,7 +440,7 @@ export default function LoginPage() {
               {fieldErrors.regPassConfirm && <div className="t-field-err">{fieldErrors.regPassConfirm}</div>}
 
               <div className="t-divider">
-                <hr /><span>tarik tuas untuk daftar</span><hr />
+                <hr /><span>klik tuas merah untuk daftar</span><hr />
               </div>
               <div className="t-toggle-link">
                 Sudah punya akun? <span onClick={() => switchView("login")}>Masuk</span>

@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import {
   getCurrentUser, logout,
   getPendingTeachers, approveUser, rejectUser,
-  getRegisteredTeachers, deleteUser, updateUser,
+  getRegisteredTeachers, deleteUser, updateUser, createTeacher,
 } from "../../controllers/AuthController";
 import AdminSidebar from "../components/sidebars/AdminSidebar";
 import Icon from "../components/Icon";
 import { TableSkeleton } from "../components/Skeleton";
+import ModalEditGuru from "../components/modal/ModalEditGuru";
+import ModalTambahGuru from "../components/modal/ModalTambahGuru";
 
 function formatDate(d) {
   if (!d) return "-";
@@ -50,12 +52,28 @@ export default function AdminGuru() {
   // registered search
   const [searchR, setSearchR] = useState("");
 
+  // add modal
+  const [showAdd, setShowAdd] = useState(false);
+
   // edit modal
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
 
   const handleLogout = () => { logout(); navigate("/"); };
+
+  const handleAdd = async (form) => {
+    setSaving(true); setError(""); setSuccess("");
+    const r = await createTeacher(form);
+    setSaving(false);
+    if (r.success) {
+      setSuccess(`Guru "${form.name}" berhasil ditambahkan!`);
+      setShowAdd(false);
+      await fetchData();
+    } else {
+      setError(r.message);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -156,7 +174,7 @@ export default function AdminGuru() {
   // edit registered teacher
   const openEdit = (teacher) => {
     setEditing(teacher.id);
-    setEditForm({ name: teacher.name || "", username: teacher.username || "", email: teacher.email || "" });
+    setEditForm({ name: teacher.name || "", username: teacher.username || "", email: teacher.email || "", mata_pelajaran: teacher.mata_pelajaran || "" });
   };
   const saveEdit = async () => {
     if (!editForm.name.trim() || !editForm.username.trim()) {
@@ -165,7 +183,12 @@ export default function AdminGuru() {
     }
     setSaving(true);
     setError(""); setSuccess("");
-    const r = await updateUser(editing, { name: editForm.name.trim(), username: editForm.username.trim(), email: editForm.email.trim() || null });
+    const r = await updateUser(editing, {
+      name: editForm.name.trim(),
+      username: editForm.username.trim(),
+      email: editForm.email.trim() || null,
+      mata_pelajaran: editForm.mata_pelajaran?.trim() || null,
+    });
     setSaving(false);
     if (r.success) {
       setSuccess("Data guru berhasil diperbarui.");
@@ -212,19 +235,19 @@ export default function AdminGuru() {
             <div className="toolbar">
               <input className="toolbar-search" type="text" placeholder="Cari nama, username, email..."
                 value={searchP} onChange={(e) => setSearchP(e.target.value)} />
-              {selectedPending.size > 0 && (
-                <span style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
-                  <button className="page-btn" style={{ color: "#2e7d32", borderColor: "#a5d6a7" }}
-                    onClick={bulkPendingApprove}>
-                    <Icon name="check" size={14} /> Setujui ({selectedPending.size})
-                  </button>
-                  <button className="page-btn" style={{ color: "#cc0033", borderColor: "#f5a0a0" }}
-                    onClick={bulkPendingReject}>
-                    <Icon name="x" size={14} /> Tolak ({selectedPending.size})
-                  </button>
-                </span>
-              )}
             </div>
+            {selectedPending.size > 0 && (
+              <div className="toolbar-actions">
+                <button className="page-btn" style={{ color: "#2e7d32", borderColor: "#a5d6a7" }}
+                  onClick={bulkPendingApprove}>
+                  <Icon name="check" size={14} /> Setujui ({selectedPending.size})
+                </button>
+                <button className="page-btn" style={{ color: "#cc0033", borderColor: "#f5a0a0" }}
+                  onClick={bulkPendingReject}>
+                  <Icon name="x" size={14} /> Tolak ({selectedPending.size})
+                </button>
+              </div>
+            )}
 
             {filteredPending.length === 0 ? (
               <p style={{ textAlign: "center", color: "#9a7a30", fontSize: 13, padding: "20px 0" }}>
@@ -279,10 +302,18 @@ export default function AdminGuru() {
 
           {/* ───── Section 2: Registered Teachers ───── */}
           <div className="welcome-card" style={{ padding: "16px 20px" }}>
-            <h2 style={{ fontSize: 17, marginBottom: 4 }}>Daftar Guru Terdaftar</h2>
-            <p style={{ fontSize: 12, color: "#9a7a30", marginBottom: 12 }}>
-              {registered.length} guru aktif
-            </p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div>
+                <h2 style={{ fontSize: 17, marginBottom: 4 }}>Daftar Guru Terdaftar</h2>
+                <p style={{ fontSize: 12, color: "#9a7a30", marginBottom: 0 }}>
+                  {registered.length} guru aktif
+                </p>
+              </div>
+              <button className="btn-primary" onClick={() => setShowAdd(true)}
+                style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Icon name="people" size={14} /> Tambah Guru
+              </button>
+            </div>
 
             <div className="toolbar">
               <input className="toolbar-search" type="text" placeholder="Cari nama, username, email..."
@@ -340,39 +371,22 @@ export default function AdminGuru() {
         </div>
       </main>
 
-      {/* Edit Modal */}
+      {showAdd && (
+        <ModalTambahGuru
+          saving={saving}
+          onClose={() => setShowAdd(false)}
+          onSave={handleAdd}
+        />
+      )}
+
       {editing && (
-        <div className="modal-backdrop" onClick={cancelEdit}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-head">
-              <h3>Edit Data Guru</h3>
-              <button className="modal-close" onClick={cancelEdit}><Icon name="x" size={18} /></button>
-            </div>
-            <div className="modal-body">
-              <div className="input-wrap">
-                <label>Nama Lengkap</label>
-                <input type="text" value={editForm.name}
-                  onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
-              </div>
-              <div className="input-wrap">
-                <label>Username</label>
-                <input type="text" value={editForm.username}
-                  onChange={(e) => setEditForm((f) => ({ ...f, username: e.target.value }))} />
-              </div>
-              <div className="input-wrap">
-                <label>Email</label>
-                <input type="email" value={editForm.email}
-                  onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))} />
-              </div>
-            </div>
-            <div className="modal-foot">
-              <button className="btn-cancel" onClick={cancelEdit}>Batal</button>
-              <button className="btn-primary" onClick={saveEdit} disabled={saving}>
-                {saving ? "Menyimpan..." : "Simpan"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ModalEditGuru
+          editForm={editForm}
+          saving={saving}
+          onClose={cancelEdit}
+          onSave={saveEdit}
+          onChange={(f) => setEditForm(f)}
+        />
       )}
     </div>
   );

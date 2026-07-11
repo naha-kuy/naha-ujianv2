@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { getCurrentUser, logout } from "../../controllers/AuthController";
 import { useNavigate } from "react-router-dom";
-import GuruSidebar from "../components/sidebars/GuruSidebar";
+import AdminSidebar from "../components/sidebars/AdminSidebar";
 import Icon from "../components/Icon";
 import PerangkatInfo from "../components/PerangkatInfo";
 import ModalSpeedTest from "../components/modal/ModalSpeedTest";
 
-export default function GuruPerangkat() {
+export default function AdminPerangkat() {
   const user = getCurrentUser();
   const navigate = useNavigate();
   const [showSpeed, setShowSpeed] = useState(false);
@@ -14,7 +14,7 @@ export default function GuruPerangkat() {
 
   return (
     <div className="dash-layout">
-      <GuruSidebar userName={user?.name} onLogout={handleLogout} />
+      <AdminSidebar userName={user?.name} onLogout={handleLogout} />
       <main className="dash-main">
         <div className="dash-content">
           <div className="welcome-card" style={{ padding: "16px 20px" }}>

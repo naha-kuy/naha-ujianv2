@@ -266,15 +266,34 @@ export async function getRegisteredTeachers() {
   return { success: true, data: data || [] };
 }
 
+export async function getRegisteredStudents() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("role", "siswa")
+    .order("name", { ascending: true });
+
+  if (error) {
+    if (error.message?.toLowerCase().includes("row level security")) {
+      return { success: false, message: "Akses ditolak. Login dengan akun admin." };
+    }
+    return { success: false, message: error.message };
+  }
+  return { success: true, data: data || [] };
+}
+
 export async function deleteUser(userId) {
-  const { error } = await supabase
+  const { error: profileError } = await supabase
     .from("profiles")
     .delete()
     .eq("id", userId);
 
-  if (error) {
-    return { success: false, message: error.message };
+  if (profileError) {
+    return { success: false, message: profileError.message };
   }
+
+  // Note: Auth user deletion requires service_role key (server-side).
+  // Profile deletion cascades to related data (jawaban_siswa, nilai, etc.)
   return { success: true };
 }
 
@@ -293,16 +312,115 @@ export async function updateUser(userId, updates) {
   return { success: true };
 }
 
+// --- Admin: Student Management ---
+
+export async function createStudent({ name, username, password, email, kelas, jurusan, student_group }) {
+  try {
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: email || `${username}@student.local`,
+      password,
+      options: {
+        data: {
+          username,
+          role: "siswa",
+          name,
+          kelas: kelas || null,
+          jurusan: jurusan || null,
+          student_group: student_group || null,
+        },
+      },
+    });
+
+    if (authError) {
+      if (authError.message?.toLowerCase().includes("already")) {
+        return { success: false, message: "Username atau email sudah terdaftar" };
+      }
+      return { success: false, message: authError.message };
+    }
+
+    if (!authData.user) {
+      return { success: false, message: "Gagal membuat akun, coba lagi" };
+    }
+
+      // Auto-approve + save password for kartu: update profile status to approved
+    const maxRetries = 10;
+    for (let i = 0; i < maxRetries; i++) {
+      await new Promise((r) => setTimeout(r, 500));
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ status: "approved", password_shown: password })
+        .eq("id", authData.user.id);
+
+      if (!updateError) break;
+      if (i === maxRetries - 1) {
+        return { success: false, message: "Akun dibuat tapi gagal auto-approve. Approve manual di halaman Guru." };
+      }
+    }
+
+    return { success: true, data: { id: authData.user.id, name, username, role: "siswa", password_shown: password } };
+  } catch (err) {
+    return { success: false, message: "Terjadi kesalahan koneksi" };
+  }
+}
+
+// --- Admin: Teacher Management ---
+
+export async function createTeacher({ name, username, password, email, mata_pelajaran }) {
+  try {
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: email || `${username}@teacher.local`,
+      password,
+      options: {
+        data: {
+          username,
+          role: "guru",
+          name,
+          mata_pelajaran: mata_pelajaran || null,
+        },
+      },
+    });
+
+    if (authError) {
+      if (authError.message?.toLowerCase().includes("already")) {
+        return { success: false, message: "Username atau email sudah terdaftar" };
+      }
+      return { success: false, message: authError.message };
+    }
+
+    if (!authData.user) {
+      return { success: false, message: "Gagal membuat akun, coba lagi" };
+    }
+
+    return { success: true, data: { id: authData.user.id, name, username, role: "guru" } };
+  } catch (err) {
+    return { success: false, message: "Terjadi kesalahan koneksi" };
+  }
+}
+
+export async function approveNewUser(userId) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ status: "approved" })
+    .eq("id", userId);
+
+  if (error) return { success: false, message: error.message };
+  return { success: true };
+}
+
 // --- Profile Update Functions ---
 
-export async function updateProfile({ name, username, student_class, student_group }) {
+export async function updateProfile({ name, username, student_class, student_group, kelas }) {
   const user = getCurrentUser();
   if (!user) return { success: false, message: "Not authenticated" };
 
   const updates = {};
   if (name !== undefined) updates.name = name;
   if (username !== undefined) updates.username = username;
-  if (student_class !== undefined) updates.student_class = student_class;
+  if (kelas !== undefined || student_class !== undefined) {
+    const val = kelas || student_class;
+    updates.kelas = val;
+    updates.student_class = val;
+  }
   if (student_group !== undefined) updates.student_group = student_group;
 
   const { error } = await supabase
@@ -320,8 +438,10 @@ export async function updateProfile({ name, username, student_class, student_gro
     return { success: false, message: error.message };
   }
 
-  // Update local session
-  const updated = { ...user, ...updates };
+  // Update local session with only the fields that exist in the session
+  const updated = { ...user };
+  if (name !== undefined) updated.name = name;
+  if (username !== undefined) updated.username = username;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
   return { success: true, user: updated };
@@ -357,6 +477,9 @@ export async function changePassword(currentPassword, newPassword) {
   if (updateError) {
     return { success: false, message: updateError.message };
   }
+
+  // Sync password_shown so kartu tetap akurat
+  await supabase.from("profiles").update({ password_shown: newPassword }).eq("id", user.id);
 
   return { success: true, message: "Password berhasil diubah" };
 }
