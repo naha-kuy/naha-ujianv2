@@ -145,6 +145,7 @@ export async function register({ username, email, password, name, role, ...extra
       password,
       options: {
         data: { username, role, name, ...extra },
+        emailRedirectTo: "https://tesmathematalk.vercel.app/",
       },
     });
 
@@ -191,7 +192,7 @@ export async function register({ username, email, password, name, role, ...extra
       ? "Pendaftaran berhasil! Silakan cek email (termasuk folder spam) untuk verifikasi, lalu Anda bisa login."
       : "Pendaftaran berhasil! Silakan cek email (termasuk folder spam) untuk verifikasi, lalu tunggu persetujuan admin.";
 
-    return { success: true, message: msg };
+    return { success: true, message: msg, role };
   } catch (err) {
     return { success: false, message: "Terjadi kesalahan koneksi" };
   }

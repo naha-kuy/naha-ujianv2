@@ -6,6 +6,7 @@ import {
   updateActivity,
 } from "../../controllers/ExamController";
 import useAntiCheat from "../../hooks/useAntiCheat";
+import katex from "katex";
 import Icon from "../components/Icon";
 import { TableSkeleton } from "../components/Skeleton";
 
@@ -154,6 +155,18 @@ export default function SiswaEngineUjian() {
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
   }, []);
+
+  // ─── Render KaTeX ───
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      document.querySelectorAll(".question-text span[data-math]").forEach((el) => {
+        const latex = el.getAttribute("data-math");
+        if (latex) {
+          try { katex.render(latex, el, { throwOnError: false }); } catch {}
+        }
+      });
+    });
+  }, [currentIndex]);
 
   // ─── Update jawaban ───
   const updateJawaban = useCallback((nomor, value) => {

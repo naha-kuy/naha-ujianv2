@@ -192,7 +192,7 @@ export default function GuruBankSoal() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                   <h1 style={{ fontSize: 18 }}>Bank Soal</h1>
                   <button className="btn-primary" onClick={openAdd} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <Icon name="save" size={14} /> Tambah Soal
+                    <Icon name="save" size={14} /> Tambah Bank Soal
                   </button>
                 </div>
                 <div className="toolbar">
@@ -280,6 +280,11 @@ export default function GuruBankSoal() {
                                 disabled={s.status === "Aktif"}
                                 style={{ color: "#b89440", border: "1px solid #e0c878" }}>
                                 <Icon name="edit" size={14} />
+                              </button>
+                              <button className="action-btn" title="Preview Soal"
+                                onClick={() => navigate(`/guru/soal-preview?kode_soal=${s.kode_soal}`)}
+                                style={{ color: "#17a2b8", border: "1px solid #9fd6e8" }}>
+                                <Icon name="monitor" size={14} />
                               </button>
                               <button className="action-btn" title="Duplikasi"
                                 onClick={() => { setShowDup(s.kode_soal); setDupKode(""); }}

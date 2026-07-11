@@ -1,7 +1,9 @@
+import { forwardRef, useImperativeHandle } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
+import { MathInline } from "./MathExtension.jsx";
 import Icon from "./Icon";
 
 const btnStyle = {
@@ -30,16 +32,31 @@ function Sep() {
   return <span style={{ width: 1, height: 18, background: "#d4b86a", display: "inline-block", margin: "0 3px", opacity: 0.4 }} />;
 }
 
-export default function RichEditor({ value, onChange, placeholder = "Tulis pertanyaan di sini...", minHeight = 150 }) {
+const RichEditor = forwardRef(function RichEditor({ value, onChange, placeholder = "Tulis pertanyaan di sini...", minHeight = 150, onEquationClick }, ref) {
   const editor = useEditor({
     extensions: [
       StarterKit,
       Image.configure({ inline: true }),
       Placeholder.configure({ placeholder }),
+      MathInline,
     ],
     content: value || "",
     onUpdate: ({ editor }) => onChange?.(editor.getHTML()),
   });
+
+  useImperativeHandle(ref, () => ({
+    insertContent: (html) => {
+      if (editor) {
+        editor.chain().focus().insertContent(html).run();
+      }
+    },
+    insertMathInline: (latex) => {
+      if (editor) {
+        editor.chain().focus().setMathInline(latex).run();
+      }
+    },
+    focus: () => editor?.commands?.focus(),
+  }));
 
   if (!editor) return null;
 
@@ -64,10 +81,18 @@ export default function RichEditor({ value, onChange, placeholder = "Tulis perta
           onMouseEnter={(e) => { e.target.style.background = "rgba(206,173,106,0.08)"; e.target.style.borderColor = "#d4b86a"; }}
           onMouseLeave={(e) => { e.target.style.background = "none"; e.target.style.borderColor = "transparent"; }}
           onClick={addImage}><Icon name="image" size={13} /></button>
+        <Sep />
+        <button type="button" style={btnStyle}
+          onMouseEnter={(e) => { e.target.style.background = "rgba(206,173,106,0.08)"; e.target.style.borderColor = "#d4b86a"; }}
+          onMouseLeave={(e) => { e.target.style.background = "none"; e.target.style.borderColor = "transparent"; }}
+          onClick={() => onEquationClick?.()}
+          title="Sisipkan rumus matematika">Σ</button>
       </div>
       <div className="editor-content" style={{ padding: "8px 12px", minHeight }}>
         <EditorContent editor={editor} />
       </div>
     </div>
   );
-}
+});
+
+export default RichEditor;

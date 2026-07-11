@@ -5,7 +5,7 @@ export default function ModalSoal({ editId, form, saving, distinctKelas, onClose
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
         <div className="modal-head">
-          <h3>{editId ? "Edit Soal" : "Tambah Soal"}</h3>
+          <h3>{editId ? "Edit Soal" : "Tambah Bank Soal"}</h3>
           <button className="modal-close" onClick={onClose}><Icon name="x" size={18} /></button>
         </div>
         <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: 14 }}>

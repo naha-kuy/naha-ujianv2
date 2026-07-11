@@ -20,6 +20,7 @@ import GuruBankSoal from "../views/pages/GuruBankSoal";
 import GuruButirSoal from "../views/pages/GuruButirSoal";
 import GuruHasil from "../views/pages/GuruHasil";
 import GuruProfil from "../views/pages/GuruProfil";
+import SoalPreview from "../views/pages/SoalPreview";
 import GuruPerangkat from "../views/pages/GuruPerangkat";
 import GuruUploadGambar from "../views/pages/GuruUploadGambar";
 import SiswaDashboard from "../views/pages/SiswaDashboard";
@@ -58,6 +59,7 @@ export default function RouteController() {
         />
         <Route path="/admin/bank-soal" element={<ProtectedRoute role="admin"><AdminBankSoal /></ProtectedRoute>} />
         <Route path="/admin/butir-soal" element={<ProtectedRoute role="admin"><AdminButirSoal /></ProtectedRoute>} />
+        <Route path="/admin/soal-preview" element={<ProtectedRoute role="admin"><SoalPreview /></ProtectedRoute>} />
         <Route path="/admin/siswa" element={<ProtectedRoute role="admin"><AdminSiswa /></ProtectedRoute>} />
         <Route path="/admin/monitoring" element={<ProtectedRoute role="admin"><AdminMonitoring /></ProtectedRoute>} />
         <Route path="/admin/online" element={<ProtectedRoute role="admin"><AdminOnline /></ProtectedRoute>} />
@@ -78,6 +80,7 @@ export default function RouteController() {
         />
         <Route path="/guru/bank-soal" element={<ProtectedRoute role="guru"><GuruBankSoal /></ProtectedRoute>} />
         <Route path="/guru/butir-soal" element={<ProtectedRoute role="guru"><GuruButirSoal /></ProtectedRoute>} />
+        <Route path="/guru/soal-preview" element={<ProtectedRoute role="guru"><SoalPreview /></ProtectedRoute>} />
         <Route path="/guru/hasil" element={<ProtectedRoute role="guru"><GuruHasil /></ProtectedRoute>} />
         <Route path="/guru/perangkat" element={<ProtectedRoute role="guru"><GuruPerangkat /></ProtectedRoute>} />
         <Route path="/guru/profil" element={<ProtectedRoute role="guru"><GuruProfil /></ProtectedRoute>} />

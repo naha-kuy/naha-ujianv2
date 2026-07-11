@@ -9,7 +9,7 @@ import AdminSidebar from "../components/sidebars/AdminSidebar";
 import Icon from "../components/Icon";
 import { TableSkeleton } from "../components/Skeleton";
 import ModalSoal from "../components/modal/ModalSoal";
-import ModalPreviewSoal from "../components/modal/ModalPreviewSoal";
+
 
 const PER_PAGE = [5, 10, 25];
 
@@ -56,8 +56,6 @@ export default function AdminBankSoal() {
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ kode_soal: "", nama_soal: "", mapel: "", kelas: "", waktu_ujian: 60, tampilan_soal: "Urut", tanggal: "", token_required: false, semua_kelas: false, tanggal_unlimited: false, tampilan_jawaban: "Urut" });
   const [saving, setSaving] = useState(false);
-
-  const [showPreview, setShowPreview] = useState(null);
 
   const handleLogout = () => { logout(); navigate("/"); };
 
@@ -271,8 +269,8 @@ export default function AdminBankSoal() {
                               )}
                             </td>
                             <td className="td-actions">
-                              <button className="action-btn" title="Preview"
-                                onClick={() => setShowPreview(s)}
+                              <button className="action-btn" title="Preview Soal"
+                                onClick={() => navigate(`/admin/soal-preview?kode_soal=${s.kode_soal}`)}
                                 style={{ color: "#17a2b8", border: "1px solid #9fd6e8" }}>
                                 <Icon name="monitor" size={14} />
                               </button>
@@ -328,12 +326,6 @@ export default function AdminBankSoal() {
         />
       )}
 
-      {showPreview && (
-        <ModalPreviewSoal
-          soal={showPreview}
-          onClose={() => setShowPreview(null)}
-        />
-      )}
     </div>
   );
 }

@@ -29,6 +29,7 @@ export default function LoginPage() {
   const [statusType, setStatusType] = useState("");
   const [welcomeMode, setWelcomeMode] = useState(null); // "register" | "login"
   const [loginResult, setLoginResult] = useState(null); // result.user for login
+  const [registerRole, setRegisterRole] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
 
   // Auto-clear errors after 6s (skip jika ada action/hubungi-admin)
@@ -149,8 +150,9 @@ export default function LoginPage() {
 
     // --- Process ---
     let result;
-    if (isReg) {
-      const payload = {
+      setRegisterRole(null);
+      if (isReg) {
+        const payload = {
         username: reg.username, email: reg.email, password: reg.password,
         name: reg.name, role: reg.role,
       };
@@ -173,6 +175,7 @@ export default function LoginPage() {
       setView("welcome");
       setWelcomeMode(isReg ? "register" : "login");
       setLoginResult(isReg ? null : result.user);
+      if (isReg) setRegisterRole(result.role);
       setStatusMsg(isReg ? "Akun berhasil dibuat!" : "Login berhasil!");
       setStatusType("ok");
 
@@ -434,16 +437,29 @@ export default function LoginPage() {
             <div className="welcome-view" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
               <div className="w-icon"><Icon name="check" size={38} style={{ color: "#28a745" }} /></div>
               {welcomeMode === "register" ? (
-                <>
-                  <div className="w-title">Pendaftaran<br />Berhasil!</div>
-                  <div className="w-sub" style={{ maxWidth: 260, textAlign: "center", lineHeight: 1.4 }}>
-                    Silakan cek email Anda (termasuk folder spam) untuk melakukan verifikasi, lalu tunggu persetujuan admin.
-                  </div>
-                  <button className="btn-primary" onClick={() => { setWelcomeMode(null); setLoginResult(null); resetToLogin(); }}
-                    style={{ marginTop: 6, fontSize: 11, padding: "8px 20px" }}>
-                    Lanjut ke Login
-                  </button>
-                </>
+                registerRole === "siswa" ? (
+                  <>
+                    <div className="w-title">Pendaftaran<br />Berhasil!</div>
+                    <div className="w-sub" style={{ maxWidth: 260, textAlign: "center", lineHeight: 1.4 }}>
+                      Silakan cek email Anda (termasuk folder spam), klik tautan konfirmasi, lalu kembali ke halaman ini untuk login.
+                    </div>
+                    <button className="btn-primary" onClick={() => { setWelcomeMode(null); setLoginResult(null); resetToLogin(); }}
+                      style={{ marginTop: 6, fontSize: 11, padding: "8px 20px" }}>
+                      Lanjut ke Login
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-title">Pendaftaran<br />Berhasil!</div>
+                    <div className="w-sub" style={{ maxWidth: 260, textAlign: "center", lineHeight: 1.4 }}>
+                      Silakan cek email Anda (termasuk folder spam) untuk verifikasi, lalu tunggu persetujuan admin.
+                    </div>
+                    <button className="btn-primary" onClick={() => { setWelcomeMode(null); setLoginResult(null); resetToLogin(); }}
+                      style={{ marginTop: 6, fontSize: 11, padding: "8px 20px" }}>
+                      Lanjut ke Login
+                    </button>
+                  </>
+                )
               ) : (
                 <>
                   <div className="w-title">Selamat<br />Datang!</div>

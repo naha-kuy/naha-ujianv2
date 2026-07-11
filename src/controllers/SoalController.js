@@ -80,8 +80,16 @@ function buildAnswerKey(questions) {
 
 function getRoleFilter(role, username) {
   if (role === "admin" || role === "siswa") return null;
-  if (role === "guru") return { column: "created_by_username", value: username };
+  if (role === "guru") return { column: "created_by_username", value: username, allowNull: true };
   return null;
+}
+
+function applyFilter(query, filter) {
+  if (!filter) return query;
+  if (filter.allowNull) {
+    return query.or(`${filter.column}.eq.${filter.value},${filter.column}.is.null`);
+  }
+  return query.eq(filter.column, filter.value);
 }
 
 function applyFilter(query, filter) {
@@ -172,7 +180,7 @@ export async function updateSoal(id, updates, { isAdmin } = {}) {
     const { data: ownerCheck } = await supabase
       .from("soal").select("created_by_username")
       .eq("id_soal", id).single();
-    if (ownerCheck?.created_by_username !== user.username) {
+    if (ownerCheck?.created_by_username && ownerCheck.created_by_username !== user.username) {
       return { success: false, message: "Anda hanya bisa mengedit soal milik sendiri" };
     }
   }
@@ -209,7 +217,7 @@ export async function deleteSoal(kode_soal) {
     const { data: ownerCheck } = await supabase
       .from("soal").select("created_by_username")
       .eq("kode_soal", kode_soal).single();
-    if (ownerCheck?.created_by_username !== user.username) {
+    if (ownerCheck?.created_by_username && ownerCheck.created_by_username !== user.username) {
       return { success: false, message: "Anda hanya bisa menghapus soal milik sendiri" };
     }
   }
@@ -231,7 +239,7 @@ export async function duplicateSoal(oldKode, newKode) {
   const { data: ownerCheck } = await supabase
     .from("soal").select("created_by_username")
     .eq("kode_soal", oldKode).single();
-  if (ownerCheck?.created_by_username !== user.username) {
+  if (ownerCheck?.created_by_username && ownerCheck.created_by_username !== user.username) {
     return { success: false, message: "Anda hanya bisa menduplikasi soal milik sendiri" };
   }
 
@@ -286,12 +294,12 @@ export async function toggleSoalStatus(id_soal, action) {
   const user = getCurrentUser();
   if (!user) return { success: false, message: "Not authenticated" };
 
-  // Check ownership
+  // Check ownership (skip if admin, or if created_by_username is not set)
   if (user.role !== "admin") {
     const { data: ownerCheck } = await supabase
       .from("soal").select("created_by_username")
       .eq("id_soal", id_soal).single();
-    if (ownerCheck?.created_by_username !== user.username) {
+    if (ownerCheck && ownerCheck.created_by_username && ownerCheck.created_by_username !== user.username) {
       return { success: false, message: "Anda hanya bisa mengelola soal milik sendiri" };
     }
   }
@@ -318,6 +326,8 @@ export async function toggleSoalStatus(id_soal, action) {
   return { success: true };
 }
 
+
+
 export async function generateSoalToken(id_soal) {
   const user = getCurrentUser();
   if (!user) return { success: false, message: "Not authenticated" };
@@ -327,7 +337,7 @@ export async function generateSoalToken(id_soal) {
     const { data: ownerCheck } = await supabase
       .from("soal").select("created_by_username")
       .eq("id_soal", id_soal).single();
-    if (ownerCheck?.created_by_username !== user.username) {
+    if (ownerCheck?.created_by_username && ownerCheck.created_by_username !== user.username) {
       return { success: false, message: "Anda hanya bisa mengelola soal milik sendiri" };
     }
   }
@@ -339,6 +349,17 @@ export async function generateSoalToken(id_soal) {
 }
 
 // ───── BUTIR SOAL CRUD ─────
+
+export async function getSoalByKodeSoal(kode_soal) {
+  const { data, error } = await supabase
+    .from("soal")
+    .select("*")
+    .eq("kode_soal", kode_soal)
+    .single();
+
+  if (error) return { success: false, message: error.message };
+  return { success: true, data };
+}
 
 export async function getButirSoalList(kode_soal) {
   const { data, error } = await supabase
@@ -386,7 +407,7 @@ export async function createButirSoal({ kode_soal, nomer_soal, pertanyaan, tipe_
 
   // Check soal ownership
   const { data: soal } = await supabase.from("soal").select("created_by_username").eq("kode_soal", kode_soal).single();
-  if (soal?.created_by_username !== user.username) {
+  if (soal?.created_by_username && soal.created_by_username !== user.username) {
     return { success: false, message: "Anda hanya bisa mengelola butir soal milik sendiri" };
   }
 
@@ -422,7 +443,7 @@ export async function updateButirSoal(id, { nomer_soal, pertanyaan, tipe_soal, p
   const { data: butir } = await supabase.from("butir_soal").select("kode_soal").eq("id_soal", id).single();
   if (butir) {
     const { data: soal } = await supabase.from("soal").select("created_by_username").eq("kode_soal", butir.kode_soal).single();
-    if (soal?.created_by_username !== user.username) {
+    if (soal?.created_by_username && soal.created_by_username !== user.username) {
       return { success: false, message: "Anda hanya bisa mengelola butir soal milik sendiri" };
     }
   }
@@ -452,7 +473,7 @@ export async function deleteButirSoal(id) {
   const { data: butir } = await supabase.from("butir_soal").select("kode_soal").eq("id_soal", id).single();
   if (butir) {
     const { data: soal } = await supabase.from("soal").select("created_by_username").eq("kode_soal", butir.kode_soal).single();
-    if (soal?.created_by_username !== user.username) {
+    if (soal?.created_by_username && soal.created_by_username !== user.username) {
       return { success: false, message: "Anda hanya bisa mengelola butir soal milik sendiri" };
     }
   }

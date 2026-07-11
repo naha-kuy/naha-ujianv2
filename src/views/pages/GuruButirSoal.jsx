@@ -63,10 +63,8 @@ export default function GuruButirSoal() {
   const back = () => navigate("/guru/bank-soal");
 
   const openAdd = async () => {
-    const next = await getNextNomer(kode_soal);
     setEditId(null);
     setForm({
-      nomer_soal: next.success ? next : 1,
       tipe_soal: "Pilihan Ganda", pertanyaan: "",
       pilihan_1: "", pilihan_2: "", pilihan_3: "", pilihan_4: "", jawaban_benar: "",
     });
@@ -86,11 +84,12 @@ export default function GuruButirSoal() {
   };
 
   const handleSave = async () => {
-    if (!form.pertanyaan.trim() || !form.nomer_soal) {
-      setError("Pertanyaan dan nomor soal wajib diisi"); return;
+    if (!form.pertanyaan.trim()) {
+      setError("Pertanyaan wajib diisi"); return;
     }
     setSaving(true); setError(""); setSuccess("");
-    const payload = { ...form, kode_soal, nomer_soal: parseInt(form.nomer_soal) };
+    const nomer_soal = editId ? form.nomer_soal : await getNextNomer(kode_soal);
+    const payload = { ...form, kode_soal, nomer_soal: parseInt(nomer_soal) };
     const r = editId ? await updateButirSoal(editId, payload) : await createButirSoal(payload);
     setSaving(false);
     if (r.success) {
