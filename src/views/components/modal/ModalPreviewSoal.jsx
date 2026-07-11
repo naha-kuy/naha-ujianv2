@@ -20,7 +20,7 @@ export default function ModalPreviewSoal({ soal, onClose }) {
                 ["Kode Soal", soal.kode_soal],
                 ["Nama Soal", soal.nama_soal],
                 ["Mapel", soal.mapel],
-                ["Kelas", soal.kelas],
+                ["Kelas", soal.semua_kelas ? "Semua Kelas" : soal.kelas],
                 ["Durasi", `${soal.waktu_ujian} menit`],
                 ["Tampilan", soal.tampilan_soal],
                 ["Tanggal", fmtDate(soal.tanggal)],

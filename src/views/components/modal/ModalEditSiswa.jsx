@@ -43,9 +43,14 @@ export default function ModalEditSiswa({ editForm, saving, onClose, onSave, onCh
           <div style={{ display: "flex", gap: 12 }}>
             <div className="input-wrap" style={{ flex: 1 }}>
               <label>Kelas</label>
-              <input type="text" value={editForm.student_class || ""}
-                onChange={(e) => onChange({ ...editForm, student_class: e.target.value })}
-                placeholder="X" />
+              <select value={editForm.kelas || ""}
+                onChange={(e) => onChange({ ...editForm, kelas: e.target.value })}
+                style={{ width: "100%" }}>
+                <option value="">-- Pilih --</option>
+                {["1","2","3","4","5","6","7","8","9","10","11","12"].map((k) =>
+                  <option key={k} value={k}>{k}</option>
+                )}
+              </select>
             </div>
             <div className="input-wrap" style={{ flex: 1 }}>
               <label>Kelompok</label>

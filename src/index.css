@@ -1574,6 +1574,62 @@ label {
 
 .modal-body {
   padding: 16px 20px;
+  overflow-y: auto;
+  max-height: 70vh;
+}
+
+.toggle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 10px;
+  border-radius: 8px;
+  border: 1.5px solid #d4b86a;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: #7a5a20;
+  transition: all 0.15s;
+  user-select: none;
+}
+.toggle-chip:hover {
+  background: #fef4d4;
+  border-color: #c4a850;
+}
+.toggle-chip-on {
+  background: #fef4d4;
+  border-color: #b89440;
+  color: #5a3a00;
+}
+.toggle-chip-on:hover {
+  background: #f7e8b8;
+}
+.toggle-switch {
+  width: 28px;
+  height: 16px;
+  border-radius: 10px;
+  background: #d4b86a;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle-switch-on {
+  background: #b89440;
+}
+.toggle-knob {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.toggle-switch-on .toggle-knob {
+  left: 14px;
 }
 
 .modal-foot {

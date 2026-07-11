@@ -27,11 +27,13 @@ export default function LoginPage() {
   const [error, setError] = useState(null);
   const [statusMsg, setStatusMsg] = useState("");
   const [statusType, setStatusType] = useState("");
+  const [welcomeMode, setWelcomeMode] = useState(null); // "register" | "login"
+  const [loginResult, setLoginResult] = useState(null); // result.user for login
   const [fieldErrors, setFieldErrors] = useState({});
 
-  // Auto-clear errors after 6s
+  // Auto-clear errors after 6s (skip jika ada action/hubungi-admin)
   useEffect(() => {
-    if (!error) return;
+    if (!error || error.action) return;
     const t = setTimeout(() => setError(null), 6000);
     return () => clearTimeout(t);
   }, [error]);
@@ -169,6 +171,8 @@ export default function LoginPage() {
 
     if (result.success) {
       setView("welcome");
+      setWelcomeMode(isReg ? "register" : "login");
+      setLoginResult(isReg ? null : result.user);
       setStatusMsg(isReg ? "Akun berhasil dibuat!" : "Login berhasil!");
       setStatusType("ok");
 
@@ -177,17 +181,6 @@ export default function LoginPage() {
       card?.classList.add("pop");
       lever?.classList.remove("pulled");
       triggerSteam();
-
-      await new Promise((r) => setTimeout(r, isReg ? 2500 : 1800));
-
-      if (isReg) {
-        resetToLogin();
-      } else {
-        card?.classList.remove("pop");
-        await new Promise((r) => setTimeout(r, 600));
-        resetToLogin();
-        navigate(`/${result.user.role}`);
-      }
     } else {
       setError({ message: result.message, action: result.action || null });
       setStatusMsg(result.message);
@@ -248,7 +241,7 @@ export default function LoginPage() {
 
   return (
     <div className="toaster-page">
-      <img src="/logo.png" alt="Logo" style={{ height: 60, marginBottom: 8, zIndex: 1 }} />
+      <img src="/logo.png" alt="Logo" style={{ height: 120, marginBottom: 8, zIndex: 1 }} />
 
       <div className="toaster-wrap">
         {/* Steam */}
@@ -289,18 +282,6 @@ export default function LoginPage() {
                   onKeyDown={(e) => { if (e.key === "Enter") doPull(); }} />
               </div>
               {fieldErrors.lPass && <div className="t-field-err">{fieldErrors.lPass}</div>}
-
-              <div className="field-label" style={{ marginBottom: 4 }}>Login Cepat</div>
-              <div className="t-quick-roles">
-                {Object.entries(roleInfo).map(([role, info]) => (
-                  <button key={role} type="button"
-                    className={`t-quick-btn ${selRole === role ? "active" : ""}`}
-                    onClick={() => toggleRole(role)}
-                  >
-                    <Icon name={info.emoji} size={info.iconSize} /> {info.label}
-                  </button>
-                ))}
-              </div>
 
               {error && (
                 <div className="error-block" style={{ animation: "fadeSlideIn 0.3s ease" }}>
@@ -398,7 +379,7 @@ export default function LoginPage() {
                   <div className={inputCls("regKelas")}>
                     <input id="regKelas" type="text" value={reg.kelas}
                       onChange={(e) => updateReg("kelas", e.target.value)}
-                      placeholder="Contoh: X" style={{ paddingLeft: 11 }} />
+                      placeholder="Contoh: 8" style={{ paddingLeft: 11 }} />
                   </div>
                   {fieldErrors.regKelas && <div className="t-field-err">{fieldErrors.regKelas}</div>}
                   <div className="field-label">Jurusan <span style={{ fontWeight: 400, color: "#aaa", fontSize: 8 }}>(opsional)</span></div>
@@ -450,10 +431,29 @@ export default function LoginPage() {
 
           {/* WELCOME VIEW */}
           {view === "welcome" && (
-            <div className="welcome-view" style={{ display: "flex" }}>
+            <div className="welcome-view" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
               <div className="w-icon"><Icon name="check" size={38} style={{ color: "#28a745" }} /></div>
-              <div className="w-title">Welcome<br />Back!</div>
-              <div className="w-sub">Successfully toasted</div>
+              {welcomeMode === "register" ? (
+                <>
+                  <div className="w-title">Pendaftaran<br />Berhasil!</div>
+                  <div className="w-sub" style={{ maxWidth: 260, textAlign: "center", lineHeight: 1.4 }}>
+                    Silakan cek email Anda (termasuk folder spam) untuk melakukan verifikasi, lalu tunggu persetujuan admin.
+                  </div>
+                  <button className="btn-primary" onClick={() => { setWelcomeMode(null); setLoginResult(null); resetToLogin(); }}
+                    style={{ marginTop: 6, fontSize: 11, padding: "8px 20px" }}>
+                    Lanjut ke Login
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="w-title">Selamat<br />Datang!</div>
+                  <div className="w-sub">Login berhasil</div>
+                  <button className="btn-primary" onClick={() => { setWelcomeMode(null); setLoginResult(null); navigate(`/${loginResult?.role}`); }}
+                    style={{ marginTop: 6, fontSize: 11, padding: "8px 20px" }}>
+                    Masuk ke Dashboard
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>

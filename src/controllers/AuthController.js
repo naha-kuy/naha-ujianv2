@@ -9,15 +9,22 @@ export async function login(username, password) {
     (u) => u.username === username && u.password === password
   );
   if (localUser) {
+    await supabase.auth
+      .signInWithPassword({ email: `${username}@app.local`, password })
+      .catch(() => {});
+    // Lookup real id from profiles so downstream queries don't use `undefined`
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", localUser.username)
+      .maybeSingle();
     const session = {
+      id: profile?.id,
       username: localUser.username,
       role: localUser.role,
       name: localUser.name,
       provider: "local",
     };
-    await supabase.auth
-      .signInWithPassword({ email: `${username}@app.local`, password })
-      .catch(() => {});
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
     return { success: true, user: session };
   }
@@ -152,11 +159,39 @@ export async function register({ username, email, password, name, role, ...extra
       return { success: false, message: "Gagal mendaftar, coba lagi" };
     }
 
-    return {
-      success: true,
-      message:
-        "Pendaftaran berhasil! Silakan cek email (termasuk folder spam) untuk verifikasi, lalu tunggu persetujuan admin.",
-    };
+    // Tunggu trigger selesai, lalu retry buat profile manual jika trigger gagal
+    const uid = authData.user.id;
+    let profileCreated = false;
+    for (let i = 0; i < 10; i++) {
+      await new Promise((r) => setTimeout(r, 600));
+      const { data: p } = await supabase.from("profiles").select("id").eq("id", uid).maybeSingle();
+      if (p) { profileCreated = true; break; }
+    }
+
+    if (!profileCreated && authData.session) {
+      // Hanya insert manual jika session aktif (email confirmation disabled)
+      await supabase.from("profiles").insert({
+        id: uid, username, email, role,
+        name: name || username,
+        kelas: extra.kelas || null,
+        jurusan: extra.jurusan || null,
+        nama_sekolah: extra.nama_sekolah || null,
+        mata_pelajaran: extra.mata_pelajaran || null,
+        catatan_pendaftaran: extra.catatan_pendaftaran || null,
+        status: role === "admin" || role === "siswa" ? "approved" : "pending",
+      }).then(() => {}).catch(() => {});
+    }
+
+    // Auto-approve siswa jika trigger sudah buat profile dengan status pending
+    if (role === "siswa") {
+      await supabase.from("profiles").update({ status: "approved" }).eq("id", uid).then(() => {}).catch(() => {});
+    }
+
+    const msg = role === "siswa"
+      ? "Pendaftaran berhasil! Silakan cek email (termasuk folder spam) untuk verifikasi, lalu Anda bisa login."
+      : "Pendaftaran berhasil! Silakan cek email (termasuk folder spam) untuk verifikasi, lalu tunggu persetujuan admin.";
+
+    return { success: true, message: msg };
   } catch (err) {
     return { success: false, message: "Terjadi kesalahan koneksi" };
   }
@@ -409,18 +444,14 @@ export async function approveNewUser(userId) {
 
 // --- Profile Update Functions ---
 
-export async function updateProfile({ name, username, student_class, student_group, kelas }) {
+export async function updateProfile({ name, username, student_group, kelas }) {
   const user = getCurrentUser();
   if (!user) return { success: false, message: "Not authenticated" };
 
   const updates = {};
   if (name !== undefined) updates.name = name;
   if (username !== undefined) updates.username = username;
-  if (kelas !== undefined || student_class !== undefined) {
-    const val = kelas || student_class;
-    updates.kelas = val;
-    updates.student_class = val;
-  }
+  if (kelas !== undefined) updates.kelas = kelas;
   if (student_group !== undefined) updates.student_group = student_group;
 
   const { error } = await supabase

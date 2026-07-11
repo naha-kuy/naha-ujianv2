@@ -1,6 +1,58 @@
 import supabase from "../models/supabaseClient";
 import { getCurrentUser } from "./AuthController";
 
+const MAPEL_MAP = {
+  matematika: "MTK", biologi: "BIO", fisika: "FIS", kimia: "KIM",
+  "bahasa indonesia": "BIN", "bahasa inggris": "BIG",
+  "bahasa arab": "BAR", "bahasa sunda": "BSD", "bahasa jawa": "BJW",
+  sejarah: "SEJ", geografi: "GEO", ekonomi: "EKO", sosiologi: "SOS",
+  "seni budaya": "SBU", "pendidikan agama islam": "PAI",
+  "pendidikan jasmani": "PJO", "teknologi informasi": "TIK",
+  prakarya: "PRK", ppkn: "PKN", kewirausahaan: "KWU",
+};
+
+function normalizeMapel(mapel) {
+  const key = mapel.toLowerCase().trim();
+  return MAPEL_MAP[key] || mapel.substring(0, 3).toUpperCase();
+}
+
+function extractNama(name) {
+  const skip = ["dr", "prof", "h", "hj"];
+  const words = name.split(/[\s,]+/);
+  for (const w of words) {
+    const clean = w.replace(/\./g, "").toLowerCase();
+    if (!skip.includes(clean) && clean.length >= 2) {
+      return w.replace(/\./g, "").toUpperCase();
+    }
+  }
+  return words[0]?.replace(/\./g, "").toUpperCase() || "GURU";
+}
+
+export async function generateKodeSoal(mapel) {
+  const user = getCurrentUser();
+  if (!user || !mapel || !mapel.trim()) return { success: false, data: "" };
+
+  const mapelCode = normalizeMapel(mapel);
+  const namaCode = extractNama(user.name || user.username);
+  const prefix = `${mapelCode}-${namaCode}`;
+
+  const { data } = await supabase
+    .from("soal")
+    .select("kode_soal")
+    .like("kode_soal", `${prefix}-%`);
+
+  let maxNum = 0;
+  for (const s of data || []) {
+    const parts = s.kode_soal.split("-");
+    const last = parts[parts.length - 1];
+    const num = parseInt(last, 10);
+    if (!isNaN(num) && num > maxNum) maxNum = num;
+  }
+
+  const kode_soal = `${prefix}-${String(maxNum + 1).padStart(2, "0")}`;
+  return { success: true, data: kode_soal };
+}
+
 function generateToken() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let t = "";
@@ -59,7 +111,7 @@ export async function getSoalList() {
       .single();
     query = query.eq("status", "Aktif");
     if (profile?.kelas) {
-      query = query.eq("kelas", profile.kelas);
+      query = query.or(`kelas.eq.${profile.kelas},semua_kelas.eq.true`);
     }
   }
 
@@ -87,7 +139,7 @@ export async function getSoalById(id) {
   return { success: true, data };
 }
 
-export async function createSoal({ kode_soal, nama_soal, mapel, kelas, waktu_ujian, tampilan_soal, tanggal, token_required, tanggal_unlimited, tampilan_jawaban }) {
+export async function createSoal({ kode_soal, nama_soal, mapel, kelas, waktu_ujian, tampilan_soal, tanggal, token_required, tanggal_unlimited, tampilan_jawaban, semua_kelas }) {
   const user = getCurrentUser();
   if (!user) return { success: false, message: "Not authenticated" };
   if (user.role !== "guru") return { success: false, message: "Hanya guru yang dapat membuat soal" };
@@ -103,6 +155,7 @@ export async function createSoal({ kode_soal, nama_soal, mapel, kelas, waktu_uji
     token_required: token_required ?? false,
     tanggal_unlimited: tanggal_unlimited ?? false,
     tampilan_jawaban: tampilan_jawaban || "Urut",
+    semua_kelas: semua_kelas ?? false,
     created_by_username: user.username,
   }).select().single();
 
@@ -136,6 +189,7 @@ export async function updateSoal(id, updates, { isAdmin } = {}) {
   if (updates.tampilan_soal !== undefined) allowed.tampilan_soal = updates.tampilan_soal;
   if (updates.tanggal !== undefined) allowed.tanggal = updates.tanggal;
   if (updates.token_required !== undefined) allowed.token_required = updates.token_required;
+  if (updates.semua_kelas !== undefined) allowed.semua_kelas = updates.semua_kelas;
   if (updates.tanggal_unlimited !== undefined) allowed.tanggal_unlimited = updates.tanggal_unlimited;
   if (updates.tampilan_jawaban !== undefined) allowed.tampilan_jawaban = updates.tampilan_jawaban;
 
@@ -198,6 +252,7 @@ export async function duplicateSoal(oldKode, newKode) {
     tanggal: new Date().toISOString().split("T")[0],
     status: "Nonaktif",
     token_required: oldSoal.token_required ?? false,
+    semua_kelas: oldSoal.semua_kelas ?? false,
     tanggal_unlimited: oldSoal.tanggal_unlimited ?? false,
     tampilan_jawaban: oldSoal.tampilan_jawaban || "Urut",
     created_by_username: user.username,
@@ -427,8 +482,8 @@ export async function getSoalCounts() {
       .eq("id", user.id)
       .single();
     if (profile?.kelas) {
-      totalQuery = totalQuery.eq("kelas", profile.kelas);
-      activeQuery = activeQuery.eq("kelas", profile.kelas);
+      totalQuery = totalQuery.or(`kelas.eq.${profile.kelas},semua_kelas.eq.true`);
+      activeQuery = activeQuery.or(`kelas.eq.${profile.kelas},semua_kelas.eq.true`);
     }
   }
 

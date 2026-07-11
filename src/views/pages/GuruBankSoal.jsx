@@ -4,6 +4,7 @@ import { getCurrentUser, logout } from "../../controllers/AuthController";
 import {
   getSoalList, createSoal, updateSoal, deleteSoal,
   duplicateSoal, toggleSoalStatus, getSoalCounts, generateSoalToken,
+  generateKodeSoal,
 } from "../../controllers/SoalController";
 import GuruSidebar from "../components/sidebars/GuruSidebar";
 import Icon from "../components/Icon";
@@ -44,7 +45,7 @@ export default function GuruBankSoal() {
 
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ kode_soal: "", nama_soal: "", mapel: "", kelas: "", waktu_ujian: 60, tampilan_soal: "Urut", tanggal: "", token_required: false, tanggal_unlimited: false, tampilan_jawaban: "Urut" });
+  const [form, setForm] = useState({ kode_soal: "", nama_soal: "", mapel: "", kelas: "", waktu_ujian: 60, tampilan_soal: "Urut", tanggal: "", token_required: false, semua_kelas: false, tanggal_unlimited: false, tampilan_jawaban: "Urut" });
   const [saving, setSaving] = useState(false);
 
   const [showDup, setShowDup] = useState(null);
@@ -62,6 +63,17 @@ export default function GuruBankSoal() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Auto-generate kode_soal when mapel changes (new exam only)
+  useEffect(() => {
+    if (!showForm || editId) return;
+    const t = setTimeout(async () => {
+      if (!form.mapel?.trim()) return;
+      const r = await generateKodeSoal(form.mapel);
+      if (r.success) setForm((f) => ({ ...f, kode_soal: r.data }));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [form.mapel, showForm, editId]);
+
   const distinctKelas = useMemo(() => [...new Set(data.map((s) => s.kelas).filter(Boolean))].sort(), [data]);
 
   const filtered = useMemo(() => {
@@ -74,7 +86,7 @@ export default function GuruBankSoal() {
         s.mapel?.toLowerCase().includes(q)
       );
     }
-    if (kelasFilter) list = list.filter((s) => s.kelas === kelasFilter);
+    if (kelasFilter) list = list.filter((s) => s.kelas === kelasFilter || s.semua_kelas);
     if (statusFilter !== "all") list = list.filter((s) => s.status === statusFilter);
     return list;
   }, [data, search, kelasFilter, statusFilter]);
@@ -86,7 +98,7 @@ export default function GuruBankSoal() {
 
   const openAdd = () => {
     setEditId(null);
-    setForm({ kode_soal: "", nama_soal: "", mapel: "", kelas: "", waktu_ujian: 60, tampilan_soal: "Urut", tanggal: new Date().toISOString().split("T")[0], token_required: false, tanggal_unlimited: false, tampilan_jawaban: "Urut" });
+    setForm({ kode_soal: "", nama_soal: "", mapel: "", kelas: "", waktu_ujian: 60, tampilan_soal: "Urut", tanggal: new Date().toISOString().split("T")[0], token_required: false, semua_kelas: false, tanggal_unlimited: false, tampilan_jawaban: "Urut" });
     setShowForm(true);
   };
 
@@ -97,6 +109,7 @@ export default function GuruBankSoal() {
       kode_soal: soal.kode_soal, nama_soal: soal.nama_soal, mapel: soal.mapel, kelas: soal.kelas,
       waktu_ujian: soal.waktu_ujian, tampilan_soal: soal.tampilan_soal, tanggal: soal.tanggal?.split("T")[0] || "",
       token_required: soal.token_required ?? false,
+      semua_kelas: soal.semua_kelas ?? false,
       tanggal_unlimited: soal.tanggal_unlimited ?? false,
       tampilan_jawaban: soal.tampilan_jawaban || "Urut",
     });
@@ -104,7 +117,7 @@ export default function GuruBankSoal() {
   };
 
   const handleSave = async () => {
-    if (!form.nama_soal.trim() || !form.kode_soal.trim() || !form.mapel.trim() || !form.kelas.trim()) {
+    if (!form.nama_soal.trim() || !form.kode_soal.trim() || !form.mapel.trim() || (!form.kelas.trim() && !form.semua_kelas)) {
       setError("Semua field wajib diisi"); return;
     }
     setSaving(true); setError(""); setSuccess("");
@@ -231,7 +244,7 @@ export default function GuruBankSoal() {
                             <td style={{ fontWeight: 700, color: "#5a3a00" }}>{s.kode_soal}</td>
                             <td className="td-name">{s.nama_soal}</td>
                             <td>{s.mapel}</td>
-                            <td>{badge(s.kelas, true)}</td>
+                            <td>{s.semua_kelas ? badge("Semua Kelas", true) : badge(s.kelas, true)}</td>
                             <td style={{ textAlign: "center" }}>{badge(`${s.jumlah_butir} soal`, s.jumlah_butir > 0)}</td>
                             <td>{s.waktu_ujian}m</td>
                             <td className="td-date">{s.tanggal_unlimited ? badge("Unlimited", true) : fmtDate(s.tanggal)}</td>

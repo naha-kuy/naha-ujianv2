@@ -82,8 +82,13 @@ export default function ModalTambahSiswa({ saving, onClose, onSave }) {
           <div style={{ display: "flex", gap: 12 }}>
             <div className="input-wrap" style={{ flex: 1 }}>
               <label>Kelas <span style={{ fontWeight: 400, color: "#aaa" }}>(opsional)</span></label>
-              <input type="text" value={form.kelas} onChange={(e) => update("kelas", e.target.value)}
-                placeholder="XII" />
+              <select value={form.kelas} onChange={(e) => update("kelas", e.target.value)}
+                style={{ width: "100%" }}>
+                <option value="">-- Pilih --</option>
+                {["1","2","3","4","5","6","7","8","9","10","11","12"].map((k) =>
+                  <option key={k} value={k}>{k}</option>
+                )}
+              </select>
             </div>
             <div className="input-wrap" style={{ flex: 1 }}>
               <label>Jurusan <span style={{ fontWeight: 400, color: "#aaa" }}>(opsional)</span></label>

@@ -64,6 +64,10 @@ CREATE POLICY "users_update_own_profile"
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
+CREATE POLICY "users_insert_own_profile"
+  ON profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
+
 CREATE POLICY "admin_read_all_profiles"
   ON profiles FOR SELECT
   USING (public.is_admin());
@@ -71,6 +75,10 @@ CREATE POLICY "admin_read_all_profiles"
 CREATE POLICY "admin_update_all_profiles"
   ON profiles FOR UPDATE
   USING (public.is_admin());
+
+CREATE POLICY "admin_insert_all_profiles"
+  ON profiles FOR INSERT
+  WITH CHECK (public.is_admin());
 
 -- ============================================================
 -- 3. TRIGGER: auto-create profile on signup
@@ -89,7 +97,7 @@ BEGIN
     id, username, email, role, name,
     mata_pelajaran, catatan_pendaftaran,
     kelas, jurusan, nama_sekolah,
-    status
+    student_group, status
   ) VALUES (
     NEW.id,
     NEW.raw_user_meta_data->>'username',
@@ -101,7 +109,8 @@ BEGIN
     NEW.raw_user_meta_data->>'kelas',
     NEW.raw_user_meta_data->>'jurusan',
     NEW.raw_user_meta_data->>'nama_sekolah',
-    CASE WHEN _role = 'admin' THEN 'approved' ELSE 'pending' END
+    NEW.raw_user_meta_data->>'student_group',
+    CASE WHEN _role IN ('admin','siswa') THEN 'approved' ELSE 'pending' END
   );
   RETURN NEW;
 END;
@@ -172,48 +181,48 @@ BEGIN
   uid_guru_bio := resolve_seed_user('00000000-0000-0000-0000-000000000004', 'gurubiologi@app.local', 'guru123',   '{"username":"gurubiologi","role":"guru","name":"Siti Rahmawati, S.Si.","mata_pelajaran":"Biologi"}');
   uid_guru_ing := resolve_seed_user('00000000-0000-0000-0000-000000000005', 'guruinggris@app.local', 'guru123',   '{"username":"guruinggris","role":"guru","name":"John Doe, M.Pd.","mata_pelajaran":"Bahasa Inggris"}');
   uid_guru_pending := resolve_seed_user('00000000-0000-0000-0000-000000000006', 'gurubaharu@app.local', 'guru123', '{"username":"gurubaharu","role":"guru","name":"Farhan Kurniawan","mata_pelajaran":"Fisika","catatan_pendaftaran":"Saya ingin mengajar Fisika di sekolah ini"}');
-  uid_siswa1  := resolve_seed_user('00000000-0000-0000-0000-000000000010', 'ahmad123@app.local', 'siswa123', '{"username":"ahmad123","role":"siswa","name":"Ahmad Rahman","kelas":"XII IPA 1"}');
-  uid_siswa2  := resolve_seed_user('00000000-0000-0000-0000-000000000011', 'siti456@app.local', 'siswa123', '{"username":"siti456","role":"siswa","name":"Siti Nurhaliza","kelas":"XII IPA 1"}');
-  uid_siswa3  := resolve_seed_user('00000000-0000-0000-0000-000000000012', 'budi789@app.local', 'siswa123', '{"username":"budi789","role":"siswa","name":"Budi Santoso","kelas":"XII IPS 1"}');
-  uid_siswa4  := resolve_seed_user('00000000-0000-0000-0000-000000000013', 'maya101@app.local', 'siswa123', '{"username":"maya101","role":"siswa","name":"Maya Sari","kelas":"XI IPA 2"}');
-  uid_siswa5  := resolve_seed_user('00000000-0000-0000-0000-000000000014', 'rizki202@app.local', 'siswa123', '{"username":"rizki202","role":"siswa","name":"Rizki Pratama","kelas":"XI IPS 2"}');
-  uid_siswa6  := resolve_seed_user('00000000-0000-0000-0000-000000000015', 'dewi303@app.local', 'siswa123', '{"username":"dewi303","role":"siswa","name":"Dewi Lestari","kelas":"X IPA 1"}');
-  uid_siswa7  := resolve_seed_user('00000000-0000-0000-0000-000000000016', 'fajar404@app.local', 'siswa123', '{"username":"fajar404","role":"siswa","name":"Fajar Nugroho","kelas":"X IPS 1"}');
-  uid_siswa8  := resolve_seed_user('00000000-0000-0000-0000-000000000017', 'intan505@app.local', 'siswa123', '{"username":"intan505","role":"siswa","name":"Intan Permata","kelas":"XII IPA 2"}');
-  uid_siswa9  := resolve_seed_user('00000000-0000-0000-0000-000000000018', 'gilang606@app.local', 'siswa123', '{"username":"gilang606","role":"siswa","name":"Gilang Ramadhan","kelas":"XII IPS 2"}');
-  uid_siswa10 := resolve_seed_user('00000000-0000-0000-0000-000000000019', 'nadia707@app.local', 'siswa123', '{"username":"nadia707","role":"siswa","name":"Nadia Putri","kelas":"XI IPA 1"}');
-  uid_siswa11 := resolve_seed_user('00000000-0000-0000-0000-000000000020', 'reza808@app.local', 'siswa123', '{"username":"reza808","role":"siswa","name":"Reza Pahlevi","kelas":"XII IPA 1"}');
-  uid_siswa12 := resolve_seed_user('00000000-0000-0000-0000-000000000021', 'anggi909@app.local', 'siswa123', '{"username":"anggi909","role":"siswa","name":"Anggi Wijaya","kelas":"XI IPA 2"}');
+  uid_siswa1  := resolve_seed_user('00000000-0000-0000-0000-000000000010', 'ahmad123@app.local', 'siswa123', '{"username":"ahmad123","role":"siswa","name":"Ahmad Rahman","kelas":"12 IPA 1"}');
+  uid_siswa2  := resolve_seed_user('00000000-0000-0000-0000-000000000011', 'siti456@app.local', 'siswa123', '{"username":"siti456","role":"siswa","name":"Siti Nurhaliza","kelas":"12 IPA 1"}');
+  uid_siswa3  := resolve_seed_user('00000000-0000-0000-0000-000000000012', 'budi789@app.local', 'siswa123', '{"username":"budi789","role":"siswa","name":"Budi Santoso","kelas":"12 IPS 1"}');
+  uid_siswa4  := resolve_seed_user('00000000-0000-0000-0000-000000000013', 'maya101@app.local', 'siswa123', '{"username":"maya101","role":"siswa","name":"Maya Sari","kelas":"11 IPA 2"}');
+  uid_siswa5  := resolve_seed_user('00000000-0000-0000-0000-000000000014', 'rizki202@app.local', 'siswa123', '{"username":"rizki202","role":"siswa","name":"Rizki Pratama","kelas":"11 IPS 2"}');
+  uid_siswa6  := resolve_seed_user('00000000-0000-0000-0000-000000000015', 'dewi303@app.local', 'siswa123', '{"username":"dewi303","role":"siswa","name":"Dewi Lestari","kelas":"10 IPA 1"}');
+  uid_siswa7  := resolve_seed_user('00000000-0000-0000-0000-000000000016', 'fajar404@app.local', 'siswa123', '{"username":"fajar404","role":"siswa","name":"Fajar Nugroho","kelas":"10 IPS 1"}');
+  uid_siswa8  := resolve_seed_user('00000000-0000-0000-0000-000000000017', 'intan505@app.local', 'siswa123', '{"username":"intan505","role":"siswa","name":"Intan Permata","kelas":"12 IPA 2"}');
+  uid_siswa9  := resolve_seed_user('00000000-0000-0000-0000-000000000018', 'gilang606@app.local', 'siswa123', '{"username":"gilang606","role":"siswa","name":"Gilang Ramadhan","kelas":"12 IPS 2"}');
+  uid_siswa10 := resolve_seed_user('00000000-0000-0000-0000-000000000019', 'nadia707@app.local', 'siswa123', '{"username":"nadia707","role":"siswa","name":"Nadia Putri","kelas":"11 IPA 1"}');
+  uid_siswa11 := resolve_seed_user('00000000-0000-0000-0000-000000000020', 'reza808@app.local', 'siswa123', '{"username":"reza808","role":"siswa","name":"Reza Pahlevi","kelas":"12 IPA 1"}');
+  uid_siswa12 := resolve_seed_user('00000000-0000-0000-0000-000000000021', 'anggi909@app.local', 'siswa123', '{"username":"anggi909","role":"siswa","name":"Anggi Wijaya","kelas":"11 IPA 2"}');
 
   -- ===================== PROFILES =====================
-  INSERT INTO profiles (id, username, email, role, name, mata_pelajaran, catatan_pendaftaran, kelas, jurusan, nama_sekolah, password_shown, status, student_class, student_group, rombel, page_url, last_activity, force_logout, created_at)
+  INSERT INTO profiles (id, username, email, role, name, mata_pelajaran, catatan_pendaftaran, kelas, jurusan, nama_sekolah, password_shown, status, student_group, page_url, last_activity, force_logout, created_at)
   VALUES
-    (uid_admin, 'admin', 'admin@app.local', 'admin', 'Administrator', NULL, NULL, NULL, NULL, NULL, NULL, 'approved', '', '', '', NULL, NULL, FALSE, '2025-01-01 08:00:00+07'),
-    (uid_admin2, 'admin2', 'admin2@app.local', 'admin', 'Operator Sekolah', NULL, NULL, NULL, NULL, NULL, NULL, 'approved', '', '', '', NULL, NULL, FALSE, '2025-02-15 09:30:00+07')
+    (uid_admin, 'admin', 'admin@app.local', 'admin', 'Administrator', NULL, NULL, NULL, NULL, NULL, NULL, 'approved', '', NULL, NULL, FALSE, '2025-01-01 08:00:00+07'),
+    (uid_admin2, 'admin2', 'admin2@app.local', 'admin', 'Operator Sekolah', NULL, NULL, NULL, NULL, NULL, NULL, 'approved', '', NULL, NULL, FALSE, '2025-02-15 09:30:00+07')
   ON CONFLICT (id) DO NOTHING;
 
-  INSERT INTO profiles (id, username, email, role, name, mata_pelajaran, catatan_pendaftaran, kelas, jurusan, nama_sekolah, password_shown, status, student_class, student_group, rombel, page_url, last_activity, force_logout, created_at)
+  INSERT INTO profiles (id, username, email, role, name, mata_pelajaran, catatan_pendaftaran, kelas, jurusan, nama_sekolah, password_shown, status, student_group, page_url, last_activity, force_logout, created_at)
   VALUES
-    (uid_guru_mtk, 'gurumatematika', 'gurumatematika@app.local', 'guru', 'Dr. Ahmad Syarif', 'Matematika', NULL, NULL, NULL, NULL, NULL, 'approved', '', '', '', NULL, NULL, FALSE, '2025-01-10 10:00:00+07'),
-    (uid_guru_bio, 'gurubiologi', 'gurubiologi@app.local', 'guru', 'Siti Rahmawati, S.Si.', 'Biologi', NULL, NULL, NULL, NULL, NULL, 'approved', '', '', '', NULL, NULL, FALSE, '2025-01-12 10:30:00+07'),
-    (uid_guru_ing, 'guruinggris', 'guruinggris@app.local', 'guru', 'John Doe, M.Pd.', 'Bahasa Inggris', NULL, NULL, NULL, NULL, NULL, 'approved', '', '', '', NULL, NULL, FALSE, '2025-02-01 11:00:00+07'),
-    (uid_guru_pending, 'gurubaharu', 'gurubaharu@app.local', 'guru', 'Farhan Kurniawan', 'Fisika', 'Saya ingin mengajar Fisika di sekolah ini', NULL, NULL, NULL, NULL, 'pending', '', '', '', NULL, NULL, FALSE, '2025-06-01 14:00:00+07')
+    (uid_guru_mtk, 'gurumatematika', 'gurumatematika@app.local', 'guru', 'Dr. Ahmad Syarif', 'Matematika', NULL, NULL, NULL, NULL, NULL, 'approved', '', NULL, NULL, FALSE, '2025-01-10 10:00:00+07'),
+    (uid_guru_bio, 'gurubiologi', 'gurubiologi@app.local', 'guru', 'Siti Rahmawati, S.Si.', 'Biologi', NULL, NULL, NULL, NULL, NULL, 'approved', '', NULL, NULL, FALSE, '2025-01-12 10:30:00+07'),
+    (uid_guru_ing, 'guruinggris', 'guruinggris@app.local', 'guru', 'John Doe, M.Pd.', 'Bahasa Inggris', NULL, NULL, NULL, NULL, NULL, 'approved', '', NULL, NULL, FALSE, '2025-02-01 11:00:00+07'),
+    (uid_guru_pending, 'gurubaharu', 'gurubaharu@app.local', 'guru', 'Farhan Kurniawan', 'Fisika', 'Saya ingin mengajar Fisika di sekolah ini', NULL, NULL, NULL, NULL, 'pending', '', NULL, NULL, FALSE, '2025-06-01 14:00:00+07')
   ON CONFLICT (id) DO NOTHING;
 
-  INSERT INTO profiles (id, username, email, role, name, mata_pelajaran, catatan_pendaftaran, kelas, jurusan, nama_sekolah, password_shown, status, student_class, student_group, rombel, page_url, last_activity, force_logout, created_at)
+  INSERT INTO profiles (id, username, email, role, name, mata_pelajaran, catatan_pendaftaran, kelas, jurusan, nama_sekolah, password_shown, status, student_group, page_url, last_activity, force_logout, created_at)
   VALUES
-    (uid_siswa1, 'ahmad123', 'ahmad123@app.local', 'siswa', 'Ahmad Rahman', NULL, NULL, 'XII IPA 1', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'XII IPA 1', 'A', 'A', '/dashboard', '2025-06-10 14:30:00+07', FALSE, '2025-01-15 08:00:00+07'),
-    (uid_siswa2, 'siti456', 'siti456@app.local', 'siswa', 'Siti Nurhaliza', NULL, NULL, 'XII IPA 1', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'XII IPA 1', 'A', 'A', '/siswa/ujian', '2025-06-10 14:25:00+07', FALSE, '2025-01-15 08:05:00+07'),
-    (uid_siswa3, 'budi789', 'budi789@app.local', 'siswa', 'Budi Santoso', NULL, NULL, 'XII IPS 1', 'IPS', 'SMA Negeri 2 Bandung', 'siswa123', 'approved', 'XII IPS 1', 'B', 'B', '/dashboard', '2025-06-10 13:00:00+07', FALSE, '2025-01-16 09:00:00+07'),
-    (uid_siswa4, 'maya101', 'maya101@app.local', 'siswa', 'Maya Sari', NULL, NULL, 'XI IPA 2', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'XI IPA 2', 'C', 'C', '/dashboard', '2025-06-10 12:00:00+07', FALSE, '2025-01-20 10:00:00+07'),
-    (uid_siswa5, 'rizki202', 'rizki202@app.local', 'siswa', 'Rizki Pratama', NULL, NULL, 'XI IPS 2', 'IPS', 'SMA Negeri 2 Bandung', 'siswa123', 'approved', 'XI IPS 2', 'D', 'D', '/dashboard', '2025-06-09 16:00:00+07', FALSE, '2025-02-01 08:00:00+07'),
-    (uid_siswa6, 'dewi303', 'dewi303@app.local', 'siswa', 'Dewi Lestari', NULL, NULL, 'X IPA 1', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'X IPA 1', 'A', 'A', '/dashboard', '2025-06-10 10:00:00+07', FALSE, '2025-02-10 09:00:00+07'),
-    (uid_siswa7, 'fajar404', 'fajar404@app.local', 'siswa', 'Fajar Nugroho', NULL, NULL, 'X IPS 1', 'IPS', 'SMA Negeri 2 Bandung', 'siswa123', 'approved', 'X IPS 1', 'B', 'B', '/dashboard', '2025-06-10 09:00:00+07', FALSE, '2025-02-15 10:00:00+07'),
-    (uid_siswa8, 'intan505', 'intan505@app.local', 'siswa', 'Intan Permata', NULL, NULL, 'XII IPA 2', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'XII IPA 2', 'C', 'C', '/siswa/ujian', '2025-06-10 14:00:00+07', FALSE, '2025-01-18 08:30:00+07'),
-    (uid_siswa9, 'gilang606', 'gilang606@app.local', 'siswa', 'Gilang Ramadhan', NULL, NULL, 'XII IPS 2', 'IPS', 'SMA Negeri 2 Bandung', 'siswa123', 'approved', 'XII IPS 2', 'D', 'D', '/dashboard', '2025-06-09 15:00:00+07', FALSE, '2025-01-22 09:15:00+07'),
-    (uid_siswa10, 'nadia707', 'nadia707@app.local', 'siswa', 'Nadia Putri', NULL, NULL, 'XI IPA 1', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'XI IPA 1', 'A', 'A', '/dashboard', '2025-06-10 11:00:00+07', FALSE, '2025-02-05 08:00:00+07'),
-    (uid_siswa11, 'reza808', 'reza808@app.local', 'siswa', 'Reza Pahlevi', NULL, NULL, 'XII IPA 1', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'XII IPA 1', 'A', 'A', '/dashboard', '2025-06-10 14:20:00+07', FALSE, '2025-01-15 08:10:00+07'),
-    (uid_siswa12, 'anggi909', 'anggi909@app.local', 'siswa', 'Anggi Wijaya', NULL, NULL, 'XI IPA 2', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'XI IPA 2', 'C', 'C', '/dashboard', '2025-06-10 12:30:00+07', FALSE, '2025-02-08 09:00:00+07')
+    (uid_siswa1, 'ahmad123', 'ahmad123@app.local', 'siswa', 'Ahmad Rahman', NULL, NULL, '12 IPA 1', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'A', '/dashboard', '2025-06-10 14:30:00+07', FALSE, '2025-01-15 08:00:00+07'),
+    (uid_siswa2, 'siti456', 'siti456@app.local', 'siswa', 'Siti Nurhaliza', NULL, NULL, '12 IPA 1', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'A', '/siswa/ujian', '2025-06-10 14:25:00+07', FALSE, '2025-01-15 08:05:00+07'),
+    (uid_siswa3, 'budi789', 'budi789@app.local', 'siswa', 'Budi Santoso', NULL, NULL, '12 IPS 1', 'IPS', 'SMA Negeri 2 Bandung', 'siswa123', 'approved', 'B', '/dashboard', '2025-06-10 13:00:00+07', FALSE, '2025-01-16 09:00:00+07'),
+    (uid_siswa4, 'maya101', 'maya101@app.local', 'siswa', 'Maya Sari', NULL, NULL, '11 IPA 2', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'C', '/dashboard', '2025-06-10 12:00:00+07', FALSE, '2025-01-20 10:00:00+07'),
+    (uid_siswa5, 'rizki202', 'rizki202@app.local', 'siswa', 'Rizki Pratama', NULL, NULL, '11 IPS 2', 'IPS', 'SMA Negeri 2 Bandung', 'siswa123', 'approved', 'D', '/dashboard', '2025-06-09 16:00:00+07', FALSE, '2025-02-01 08:00:00+07'),
+    (uid_siswa6, 'dewi303', 'dewi303@app.local', 'siswa', 'Dewi Lestari', NULL, NULL, '10 IPA 1', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'A', '/dashboard', '2025-06-10 10:00:00+07', FALSE, '2025-02-10 09:00:00+07'),
+    (uid_siswa7, 'fajar404', 'fajar404@app.local', 'siswa', 'Fajar Nugroho', NULL, NULL, '10 IPS 1', 'IPS', 'SMA Negeri 2 Bandung', 'siswa123', 'approved', 'B', '/dashboard', '2025-06-10 09:00:00+07', FALSE, '2025-02-15 10:00:00+07'),
+    (uid_siswa8, 'intan505', 'intan505@app.local', 'siswa', 'Intan Permata', NULL, NULL, '12 IPA 2', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'C', '/siswa/ujian', '2025-06-10 14:00:00+07', FALSE, '2025-01-18 08:30:00+07'),
+    (uid_siswa9, 'gilang606', 'gilang606@app.local', 'siswa', 'Gilang Ramadhan', NULL, NULL, '12 IPS 2', 'IPS', 'SMA Negeri 2 Bandung', 'siswa123', 'approved', 'D', '/dashboard', '2025-06-09 15:00:00+07', FALSE, '2025-01-22 09:15:00+07'),
+    (uid_siswa10, 'nadia707', 'nadia707@app.local', 'siswa', 'Nadia Putri', NULL, NULL, '11 IPA 1', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'A', '/dashboard', '2025-06-10 11:00:00+07', FALSE, '2025-02-05 08:00:00+07'),
+    (uid_siswa11, 'reza808', 'reza808@app.local', 'siswa', 'Reza Pahlevi', NULL, NULL, '12 IPA 1', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'A', '/dashboard', '2025-06-10 14:20:00+07', FALSE, '2025-01-15 08:10:00+07'),
+    (uid_siswa12, 'anggi909', 'anggi909@app.local', 'siswa', 'Anggi Wijaya', NULL, NULL, '11 IPA 2', 'IPA', 'SMA Negeri 1 Jakarta', 'siswa123', 'approved', 'C', '/dashboard', '2025-06-10 12:30:00+07', FALSE, '2025-02-08 09:00:00+07')
   ON CONFLICT (id) DO NOTHING;
 END;
 $$;
@@ -253,22 +262,23 @@ CREATE TABLE IF NOT EXISTS soal (
   token_required BOOLEAN DEFAULT false,
   tanggal_unlimited BOOLEAN DEFAULT false,
   tampilan_jawaban VARCHAR(10) DEFAULT 'Urut',
-  created_by_username TEXT
+  created_by_username TEXT,
+  semua_kelas BOOLEAN DEFAULT false
 );
 
 ALTER TABLE soal ENABLE ROW LEVEL SECURITY;
 
-INSERT INTO soal (kode_soal, nama_soal, mapel, kelas, waktu_ujian, tanggal, status, tampilan_soal, kunci, token, created_by, created_at, token_required, tanggal_unlimited, tampilan_jawaban, created_by_username)
+INSERT INTO soal (kode_soal, nama_soal, mapel, kelas, waktu_ujian, tanggal, status, tampilan_soal, kunci, token, created_by, created_at, token_required, tanggal_unlimited, tampilan_jawaban, created_by_username, semua_kelas)
 SELECT * FROM (VALUES
-  ('MTK-2025-01', 'Matematika Dasar XII IPA', 'Matematika', 'XII IPA 1', 90, '2025-11-20'::date, 'Aktif', 'Acak', '[1:A],[2:C],[3:D],[4:B],[5:A],[6:B],[7:B],[8:C]', 'ABC123', (SELECT id FROM profiles WHERE email = 'gurumatematika@app.local'), '2025-10-01 08:00:00+07'::timestamptz, TRUE, FALSE, 'Acak', 'gurumatematika'),
-  ('MTK-2025-02', 'Trigonometri Lanjutan', 'Matematika', 'XI IPA 1', 75, '2025-11-25'::date, 'Aktif', 'Urut', '[1:B],[2:A],[3:A],[4:B],[5:D]', NULL, (SELECT id FROM profiles WHERE email = 'gurumatematika@app.local'), '2025-10-05 09:00:00+07'::timestamptz, FALSE, FALSE, 'Urut', 'gurumatematika'),
-  ('BIO-2025-01', 'Biologi Sel & Genetika', 'Biologi', 'XII IPA 1', 80, '2025-11-21'::date, 'Aktif', 'Acak', '[1:B],[2:B],[3:B],[4:B],[5:C],[6:A],[7:Salah]', 'DEF456', (SELECT id FROM profiles WHERE email = 'gurubiologi@app.local'), '2025-10-10 10:00:00+07'::timestamptz, TRUE, FALSE, 'Urut', 'gurubiologi'),
-  ('BIO-2025-02', 'Ekologi & Lingkungan', 'Biologi', 'X IPA 1', 60, '2025-11-28'::date, 'Nonaktif', 'Urut', NULL, NULL, (SELECT id FROM profiles WHERE email = 'gurubiologi@app.local'), '2025-10-12 11:00:00+07'::timestamptz, FALSE, TRUE, 'Urut', 'gurubiologi'),
-  ('ING-2025-01', 'English Grammar & Composition', 'Bahasa Inggris', 'XII IPA 1', 60, '2025-11-22'::date, 'Aktif', 'Acak', '[1:B],[2:B],[3:A],[4:B],[5:C],[6:B],[7:A],[8:C]', NULL, (SELECT id FROM profiles WHERE email = 'guruinggris@app.local'), '2025-10-15 08:30:00+07'::timestamptz, FALSE, FALSE, 'Acak', 'guruinggris'),
-  ('ING-2025-02', 'Reading Comprehension', 'Bahasa Inggris', 'X IPS 1', 45, '2025-11-29'::date, 'Nonaktif', 'Urut', NULL, NULL, (SELECT id FROM profiles WHERE email = 'guruinggris@app.local'), '2025-10-20 09:00:00+07'::timestamptz, FALSE, TRUE, 'Urut', 'guruinggris'),
-  ('MTK-2025-03', 'Statistika & Probabilitas', 'Matematika', 'XII IPS 1', 60, '2025-12-01'::date, 'Aktif', 'Urut', '[1:C],[2:C],[3:C],[4:A],[5:C],[6:A]', 'GHI789', (SELECT id FROM profiles WHERE email = 'gurumatematika@app.local'), '2025-10-25 10:00:00+07'::timestamptz, TRUE, FALSE, 'Urut', 'gurumatematika'),
-  ('BIO-2025-03', 'Anatomi Tumbuhan', 'Biologi', 'XI IPA 2', 50, '2025-12-05'::date, 'Aktif', 'Acak', '[1:B],[2:A],[3:B],[4:A],[5:B]', NULL, (SELECT id FROM profiles WHERE email = 'gurubiologi@app.local'), '2025-11-01 11:00:00+07'::timestamptz, FALSE, FALSE, 'Acak', 'gurubiologi')
-) AS v(kode_soal, nama_soal, mapel, kelas, waktu_ujian, tanggal, status, tampilan_soal, kunci, token, created_by, created_at, token_required, tanggal_unlimited, tampilan_jawaban, created_by_username)
+  ('MTK-2025-01', 'Matematika Dasar XII IPA', 'Matematika', '12 IPA 1', 90, '2025-11-20'::date, 'Aktif', 'Acak', '[1:A],[2:C],[3:D],[4:B],[5:A],[6:B],[7:B],[8:C]', 'ABC123', (SELECT id FROM profiles WHERE email = 'gurumatematika@app.local'), '2025-10-01 08:00:00+07'::timestamptz, TRUE, FALSE, 'Acak', 'gurumatematika', FALSE),
+  ('MTK-2025-02', 'Trigonometri Lanjutan', 'Matematika', '11 IPA 1', 75, '2025-11-25'::date, 'Aktif', 'Urut', '[1:B],[2:A],[3:A],[4:B],[5:D]', NULL, (SELECT id FROM profiles WHERE email = 'gurumatematika@app.local'), '2025-10-05 09:00:00+07'::timestamptz, FALSE, FALSE, 'Urut', 'gurumatematika', FALSE),
+  ('BIO-2025-01', 'Biologi Sel & Genetika', 'Biologi', '12 IPA 1', 80, '2025-11-21'::date, 'Aktif', 'Acak', '[1:B],[2:B],[3:B],[4:B],[5:C],[6:A],[7:Salah]', 'DEF456', (SELECT id FROM profiles WHERE email = 'gurubiologi@app.local'), '2025-10-10 10:00:00+07'::timestamptz, TRUE, FALSE, 'Urut', 'gurubiologi', FALSE),
+  ('BIO-2025-02', 'Ekologi & Lingkungan', 'Biologi', '10 IPA 1', 60, '2025-11-28'::date, 'Nonaktif', 'Urut', NULL, NULL, (SELECT id FROM profiles WHERE email = 'gurubiologi@app.local'), '2025-10-12 11:00:00+07'::timestamptz, FALSE, TRUE, 'Urut', 'gurubiologi', FALSE),
+  ('ING-2025-01', 'English Grammar & Composition', 'Bahasa Inggris', '12 IPA 1', 60, '2025-11-22'::date, 'Aktif', 'Acak', '[1:B],[2:B],[3:A],[4:B],[5:C],[6:B],[7:A],[8:C]', NULL, (SELECT id FROM profiles WHERE email = 'guruinggris@app.local'), '2025-10-15 08:30:00+07'::timestamptz, FALSE, FALSE, 'Acak', 'guruinggris', FALSE),
+  ('ING-2025-02', 'Reading Comprehension', 'Bahasa Inggris', '10 IPS 1', 45, '2025-11-29'::date, 'Nonaktif', 'Urut', NULL, NULL, (SELECT id FROM profiles WHERE email = 'guruinggris@app.local'), '2025-10-20 09:00:00+07'::timestamptz, FALSE, TRUE, 'Urut', 'guruinggris', FALSE),
+  ('MTK-2025-03', 'Statistika & Probabilitas', 'Matematika', '12 IPS 1', 60, '2025-12-01'::date, 'Aktif', 'Urut', '[1:C],[2:C],[3:C],[4:A],[5:C],[6:A]', 'GHI789', (SELECT id FROM profiles WHERE email = 'gurumatematika@app.local'), '2025-10-25 10:00:00+07'::timestamptz, TRUE, FALSE, 'Urut', 'gurumatematika', FALSE),
+  ('BIO-2025-03', 'Anatomi Tumbuhan', 'Biologi', '11 IPA 2', 50, '2025-12-05'::date, 'Aktif', 'Acak', '[1:B],[2:A],[3:B],[4:A],[5:B]', NULL, (SELECT id FROM profiles WHERE email = 'gurubiologi@app.local'), '2025-11-01 11:00:00+07'::timestamptz, FALSE, FALSE, 'Acak', 'gurubiologi', FALSE)
+) AS v(kode_soal, nama_soal, mapel, kelas, waktu_ujian, tanggal, status, tampilan_soal, kunci, token, created_by, created_at, token_required, tanggal_unlimited, tampilan_jawaban, created_by_username, semua_kelas)
 WHERE NOT EXISTS (SELECT 1 FROM soal WHERE soal.kode_soal = v.kode_soal);
 
 -- ============================================================

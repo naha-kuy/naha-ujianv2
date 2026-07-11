@@ -9,11 +9,12 @@ export default function ModalSoal({ editId, form, saving, distinctKelas, onClose
           <button className="modal-close" onClick={onClose}><Icon name="x" size={18} /></button>
         </div>
         <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div className="input-wrap">
-            <label>Kode Soal *</label>
-            <input type="text" value={form.kode_soal} onChange={(e) => onChange({ ...form, kode_soal: e.target.value })}
-              disabled={!!editId} placeholder="Misal: MTK-01" />
-          </div>
+          {editId && (
+            <div className="input-wrap">
+              <label>Kode Soal</label>
+              <input type="text" value={form.kode_soal} disabled placeholder="Otomatis" />
+            </div>
+          )}
           <div className="input-wrap">
             <label>Nama Soal *</label>
             <input type="text" value={form.nama_soal} onChange={(e) => onChange({ ...form, nama_soal: e.target.value })} placeholder="Ujian Matematika" />
@@ -24,10 +25,14 @@ export default function ModalSoal({ editId, form, saving, distinctKelas, onClose
               <input type="text" value={form.mapel} onChange={(e) => onChange({ ...form, mapel: e.target.value })} placeholder="Matematika" />
             </div>
             <div className="input-wrap" style={{ flex: 1 }}>
-              <label>Kelas *</label>
-              <select value={form.kelas} onChange={(e) => onChange({ ...form, kelas: e.target.value })}>
-                <option value="">Pilih</option>
-                {[...new Set([...distinctKelas, "X", "XI", "XII"])].sort().map((k) => <option key={k} value={k}>{k}</option>)}
+              <label>Kelas {!form.semua_kelas ? '*' : ''}</label>
+              <select value={form.kelas} onChange={(e) => onChange({ ...form, kelas: e.target.value })}
+                disabled={form.semua_kelas} style={form.semua_kelas ? { opacity: 0.5 } : {}}>
+                <option value="">{form.semua_kelas ? "Semua Kelas" : "Pilih"}</option>
+                {!form.semua_kelas && [...new Set([...distinctKelas, "1","2","3","4","5","6","7","8","9","10","11","12"])].sort((a,b) => {
+                  const na = parseInt(a), nb = parseInt(b);
+                  return isNaN(na) || isNaN(nb) ? a.localeCompare(b) : na - nb;
+                }).map((k) => <option key={k} value={k}>{k}</option>)}
               </select>
             </div>
           </div>
@@ -51,19 +56,26 @@ export default function ModalSoal({ editId, form, saving, distinctKelas, onClose
               </select>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#5a3a00" }}>
-              <input type="checkbox" checked={form.token_required}
-                onChange={(e) => onChange({ ...form, token_required: e.target.checked })}
-                style={{ accentColor: "#b89440" }} />
-              Wajib Token
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#5a3a00" }}>
-              <input type="checkbox" checked={form.tanggal_unlimited}
-                onChange={(e) => onChange({ ...form, tanggal_unlimited: e.target.checked })}
-                style={{ accentColor: "#b89440" }} />
-              Unlimited (tanpa batas tanggal)
-            </label>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+            {[
+              { key: "token_required", label: "Wajib Token", icon: "lock", checked: form.token_required,
+                onChange: (v) => onChange({ ...form, token_required: v }) },
+              { key: "semua_kelas", label: "Semua Kelas", icon: "people", checked: form.semua_kelas,
+                onChange: (v) => onChange({ ...form, semua_kelas: v, kelas: v ? "" : form.kelas }) },
+              { key: "tanggal_unlimited", label: "Tanpa Batas Tanggal", icon: "zap", checked: form.tanggal_unlimited,
+                onChange: (v) => onChange({ ...form, tanggal_unlimited: v }) },
+            ].map((opt) => (
+              <label key={opt.key} className={`toggle-chip ${opt.checked ? "toggle-chip-on" : ""}`}>
+                <Icon name={opt.icon} size={14} />
+                <span>{opt.label}</span>
+                <div className={`toggle-switch ${opt.checked ? "toggle-switch-on" : ""}`}>
+                  <div className="toggle-knob" />
+                </div>
+                <input type="checkbox" checked={opt.checked}
+                  onChange={(e) => opt.onChange(e.target.checked)}
+                  style={{ display: "none" }} />
+              </label>
+            ))}
           </div>
           {!form.tanggal_unlimited && (
             <div className="input-wrap">

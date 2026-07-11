@@ -22,7 +22,7 @@ export default function AdminImportSiswa() {
     const wb = XLSX.utils.book_new();
     const data = [
       ["Nama Lengkap", "Username", "Password", "Email", "Kelas", "Jurusan", "Rombel"],
-      ["Contoh: Ahmad Fauzi", "ahmad", "ahmad123", "ahmad@sekolah.sch.id", "XII", "IPA", "A"],
+      ["Contoh: Ahmad Fauzi", "ahmad", "ahmad123", "ahmad@sekolah.sch.id", "12", "IPA", "A"],
     ];
     const ws = XLSX.utils.aoa_to_sheet(data);
     ws["!cols"] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 8 }, { wch: 10 }, { wch: 8 }];

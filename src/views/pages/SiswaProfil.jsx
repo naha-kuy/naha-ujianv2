@@ -10,7 +10,7 @@ export default function SiswaProfil() {
   const handleLogout = () => { logout(); navigate("/"); };
 
   const [fullName, setFullName] = useState(user?.name || "");
-  const [studentClass, setStudentClass] = useState(user?.student_class || "");
+  const [siswaKelas, setSiswaKelas] = useState(user?.kelas || "");
   const [studentGroup, setStudentGroup] = useState(user?.student_group || "");
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -45,7 +45,7 @@ export default function SiswaProfil() {
     setLoading(true);
     const profileRes = await updateProfile({
       name: fullName,
-      student_class: studentClass,
+      kelas: siswaKelas,
       student_group: studentGroup,
     });
     if (profileRes.success) {
@@ -105,9 +105,13 @@ export default function SiswaProfil() {
               <div className="form-row">
                 <div className="form-group">
                   <label>Kelas</label>
-                  <input type="text" className="form-control" value={studentClass}
-                    onChange={(e) => setStudentClass(e.target.value)}
-                    placeholder="Contoh: XII IPA 1" />
+                  <select className="form-control" value={siswaKelas}
+                    onChange={(e) => setSiswaKelas(e.target.value)}>
+                    <option value="">-- Pilih --</option>
+                    {["1","2","3","4","5","6","7","8","9","10","11","12"].map((k) =>
+                      <option key={k} value={k}>{k}</option>
+                    )}
+                  </select>
                   <div className="form-hint">Kelas Anda saat ini</div>
                 </div>
                 <div className="form-group">

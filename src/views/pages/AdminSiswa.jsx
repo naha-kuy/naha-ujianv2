@@ -80,7 +80,7 @@ export default function AdminSiswa() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const distinctKelas = useMemo(() => {
-    return [...new Set(students.map((s) => s.student_class).filter(Boolean))].sort();
+    return [...new Set(students.map((s) => s.kelas).filter(Boolean))].sort();
   }, [students]);
 
   const filtered = useMemo(() => {
@@ -93,7 +93,7 @@ export default function AdminSiswa() {
         u.email?.toLowerCase().includes(q)
       );
     }
-    if (kelasFilter) list = list.filter((u) => u.student_class === kelasFilter);
+    if (kelasFilter) list = list.filter((u) => u.kelas === kelasFilter);
     return list;
   }, [students, search, kelasFilter]);
 
@@ -118,7 +118,7 @@ export default function AdminSiswa() {
       name: siswa.name || "",
       username: siswa.username || "",
       email: siswa.email || "",
-      student_class: siswa.student_class || "",
+      kelas: siswa.kelas || "",
       student_group: siswa.student_group || "",
     });
   };
@@ -131,7 +131,7 @@ export default function AdminSiswa() {
       name: editForm.name.trim(),
       username: editForm.username.trim(),
       email: editForm.email.trim() || null,
-      student_class: editForm.student_class?.trim() || null,
+      kelas: editForm.kelas?.trim() || null,
       student_group: editForm.student_group?.trim() || null,
     });
     setSaving(false);
@@ -218,7 +218,7 @@ export default function AdminSiswa() {
                           <td>@{u.username}</td>
                           <td style={{ fontSize: 11, fontFamily: "monospace", color: "#5a3a00" }}>{u.password_shown || "—"}</td>
                           <td style={{ fontSize: 12, color: "#7a5a20" }}>{u.email || "-"}</td>
-                          <td>{u.student_class || "-"}</td>
+                          <td>{u.kelas || "-"}</td>
                           <td>{u.student_group || "-"}</td>
                           <td>
                             <span style={{

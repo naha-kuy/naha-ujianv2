@@ -21,7 +21,7 @@ export async function getAvailableExams() {
     .from("soal")
     .select("*")
     .eq("status", "Aktif")
-    .eq("kelas", profile.kelas)
+    .or(`kelas.eq.${profile.kelas},semua_kelas.eq.true`)
     .lte("tanggal", today)
     .order("tanggal", { ascending: false });
 
@@ -85,7 +85,7 @@ export async function verifyExam(kode_soal) {
     .eq("id", user.id)
     .single();
 
-  if (profile && soal.kelas !== profile.kelas) {
+  if (profile && !soal.semua_kelas && soal.kelas !== profile.kelas) {
     return { success: false, message: "Soal ini bukan untuk kelas kamu" };
   }
 
@@ -589,7 +589,7 @@ export async function getMonitoringData(kelasFilter) {
 
   let query = supabase
     .from("jawaban_siswa")
-    .select("*, siswa:profiles!id_siswa(name, username, kelas, rombel, student_group, last_activity, force_logout, page_url), soal:soal!kode_soal(nama_soal, mapel, waktu_ujian)")
+    .select("*, siswa:profiles!id_siswa(name, username, kelas, student_group, last_activity, force_logout, page_url), soal:soal!kode_soal(nama_soal, mapel, waktu_ujian)")
     .eq("status_ujian", "Aktif")
     .order("last_save", { ascending: false });
 
