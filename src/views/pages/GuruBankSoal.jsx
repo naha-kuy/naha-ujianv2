@@ -6,6 +6,7 @@ import {
   duplicateSoal, toggleSoalStatus, getSoalCounts, generateSoalToken,
   generateKodeSoal,
 } from "../../controllers/SoalController";
+import { useNotification } from "../../contexts/NotificationContext";
 import GuruSidebar from "../components/sidebars/GuruSidebar";
 import Icon from "../components/Icon";
 import { TableSkeleton } from "../components/Skeleton";
@@ -31,11 +32,10 @@ function badge(val, ok) {
 export default function GuruBankSoal() {
   const user = getCurrentUser();
   const navigate = useNavigate();
+  const notif = useNotification();
   const [data, setData] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [search, setSearch] = useState("");
   const [kelasFilter, setKelasFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -54,9 +54,9 @@ export default function GuruBankSoal() {
   const handleLogout = () => { logout(); navigate("/"); };
 
   const fetchData = useCallback(async () => {
-    setLoading(true); setError("");
+    setLoading(true);
     const [r, s] = await Promise.all([getSoalList(), getSoalCounts()]);
-    if (r.success) setData(r.data); else setError(r.message);
+    if (r.success) setData(r.data); else notif.addNotification("error", r.message);
     if (s.success) setStats(s.data);
     setLoading(false);
   }, []);
@@ -103,7 +103,7 @@ export default function GuruBankSoal() {
   };
 
   const openEdit = (soal) => {
-    if (soal.status === "Aktif") { setError("Tidak bisa mengedit soal yang aktif"); return; }
+    if (soal.status === "Aktif") { notif.addNotification("error", "Tidak bisa mengedit soal yang aktif"); return; }
     setEditId(soal.id_soal);
     setForm({
       kode_soal: soal.kode_soal, nama_soal: soal.nama_soal, mapel: soal.mapel, kelas: soal.kelas,
@@ -118,47 +118,47 @@ export default function GuruBankSoal() {
 
   const handleSave = async () => {
     if (!form.nama_soal.trim() || !form.kode_soal.trim() || !form.mapel.trim() || (!form.kelas.trim() && !form.semua_kelas)) {
-      setError("Semua field wajib diisi"); return;
+      notif.addNotification("error", "Semua field wajib diisi"); return;
     }
-    setSaving(true); setError(""); setSuccess("");
+    setSaving(true);
     const r = editId ? await updateSoal(editId, form) : await createSoal(form);
     setSaving(false);
-    if (r.success) { setSuccess(editId ? "Soal diperbarui" : "Soal dibuat"); setShowForm(false); await fetchData(); }
-    else setError(r.message);
+    if (r.success) { notif.addNotification("success", editId ? "Soal diperbarui" : "Soal dibuat"); setShowForm(false); await fetchData(); }
+    else notif.addNotification("error", r.message);
   };
 
   const handleDelete = async (soal) => {
-    if (soal.status === "Aktif") { setError("Tidak bisa menghapus soal yang aktif"); return; }
+    if (soal.status === "Aktif") { notif.addNotification("error", "Tidak bisa menghapus soal yang aktif"); return; }
     if (!window.confirm(`Hapus "${soal.nama_soal}"?`)) return;
-    setActionLoading(soal.kode_soal); setError(""); setSuccess("");
+    setActionLoading(soal.kode_soal);
     const r = await deleteSoal(soal.kode_soal);
     setActionLoading(null);
-    if (r.success) { setSuccess("Soal dihapus"); await fetchData(); } else setError(r.message);
+    if (r.success) { notif.addNotification("success", "Soal dihapus"); await fetchData(); } else notif.addNotification("error", r.message);
   };
 
   const handleDuplicate = async () => {
-    if (!dupKode.trim()) { setError("Masukkan kode soal baru"); return; }
-    setSaving(true); setError(""); setSuccess("");
+    if (!dupKode.trim()) { notif.addNotification("error", "Masukkan kode soal baru"); return; }
+    setSaving(true);
     const r = await duplicateSoal(showDup, dupKode.trim());
     setSaving(false);
-    if (r.success) { setSuccess("Soal diduplikasi"); setShowDup(null); setDupKode(""); await fetchData(); }
-    else setError(r.message);
+    if (r.success) { notif.addNotification("success", "Soal diduplikasi"); setShowDup(null); setDupKode(""); await fetchData(); }
+    else notif.addNotification("error", r.message);
   };
 
   const handleToggle = async (id, action) => {
-    setActionLoading(id); setError(""); setSuccess("");
+    setActionLoading(id);
     const r = await toggleSoalStatus(id, action);
     setActionLoading(null);
-    if (r.success) { setSuccess(action === "aktif" ? "Soal diaktifkan" : "Soal dinonaktifkan"); await fetchData(); }
-    else setError(r.message);
+    if (r.success) { notif.addNotification("success", action === "aktif" ? "Soal diaktifkan" : "Soal dinonaktifkan"); await fetchData(); }
+    else notif.addNotification("error", r.message);
   };
 
   const handleGenToken = async (id) => {
-    setActionLoading(id); setError(""); setSuccess("");
+    setActionLoading(id);
     const r = await generateSoalToken(id);
     setActionLoading(null);
-    if (r.success) { setSuccess(`Token: ${r.token}`); await fetchData(); }
-    else setError(r.message);
+    if (r.success) { notif.addNotification("success", `Token: ${r.token}`); await fetchData(); }
+    else notif.addNotification("error", r.message);
   };
 
   return (
@@ -166,9 +166,6 @@ export default function GuruBankSoal() {
       <GuruSidebar userName={user?.name} onLogout={handleLogout} />
       <main className="dash-main">
         <div className="dash-content">
-          {error && <div className="alert-anim" style={{ background: "rgba(208,53,53,0.1)", border: "1px solid rgba(208,53,53,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#b02020", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>{error}</div>}
-          {success && <div className="alert-anim" style={{ background: "rgba(30,80,16,0.08)", border: "1px solid rgba(30,80,16,0.15)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#1e5010", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>{success}</div>}
-
           {loading ? (
             <div className="welcome-card">
               <h1 style={{ fontSize: 18, marginBottom: 12 }}>Bank Soal</h1>

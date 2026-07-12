@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getCurrentUser, logout } from "../../controllers/AuthController";
 import { verifyExam, verifikasiTokenDanMulai } from "../../controllers/ExamController";
+import { useNotification } from "../../contexts/NotificationContext";
 import SiswaSidebar from "../components/sidebars/SiswaSidebar";
 import Icon from "../components/Icon";
 import { TableSkeleton } from "../components/Skeleton";
@@ -14,7 +15,7 @@ export default function SiswaKonfirmasiUjian() {
   const handleLogout = () => { logout(); navigate("/"); };
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const notif = useNotification();
   const [data, setData] = useState(null);
   const [sesiAktif, setSesiAktif] = useState(null);
   const [token, setToken] = useState("");
@@ -30,7 +31,7 @@ export default function SiswaKonfirmasiUjian() {
         setData(r.data);
         setSesiAktif(r.data.sesi_aktif);
       } else {
-        setError(r.message);
+        notif.addNotification("error", r.message);
       }
       setLoading(false);
     })();
@@ -39,13 +40,12 @@ export default function SiswaKonfirmasiUjian() {
   const handleMulai = async (reset = false) => {
     if (!data) return;
     setVerifying(true);
-    setError("");
 
     const r = await verifikasiTokenDanMulai(kode_soal, token, reset);
     if (r.success) {
       navigate(`/siswa/ujian/mulai?kode_soal=${kode_soal}`);
     } else {
-      setError(r.message);
+      notif.addNotification("error", r.message);
     }
     setVerifying(false);
   };
@@ -67,12 +67,6 @@ export default function SiswaKonfirmasiUjian() {
       <SiswaSidebar userName={user?.name} onLogout={handleLogout} />
       <main className="dash-main">
         <div className="dash-content">
-          {error && (
-            <div style={{ background: "rgba(208,53,53,0.1)", border: "1px solid rgba(208,53,53,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#b02020", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>
-              <Icon name="warning" size={14} style={{ verticalAlign: "middle", marginRight: 4 }} /> {error}
-            </div>
-          )}
-
           {loading ? (
             <div className="welcome-card"><TableSkeleton rows={4} cols={2} /></div>
           ) : data ? (

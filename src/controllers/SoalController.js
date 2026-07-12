@@ -92,11 +92,6 @@ function applyFilter(query, filter) {
   return query.eq(filter.column, filter.value);
 }
 
-function applyFilter(query, filter) {
-  if (!filter) return query;
-  return query.eq(filter.column, filter.value);
-}
-
 // ───── SOAL CRUD ─────
 
 export async function getSoalList() {

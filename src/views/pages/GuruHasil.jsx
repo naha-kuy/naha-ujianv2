@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useNotification } from "../../contexts/NotificationContext";
 import { getCurrentUser, logout } from "../../controllers/AuthController";
 import { getAllResults, simpanNilaiUraian, deleteNilai } from "../../controllers/ExamController";
 import { getSoalList } from "../../controllers/SoalController";
@@ -161,7 +162,7 @@ export default function GuruHasil() {
   const handleLogout = () => { logout(); navigate("/"); };
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const notif = useNotification();
   const [results, setResults] = useState([]);
   const [exams, setExams] = useState([]);
   const [selectedKodeSoal, setSelectedKodeSoal] = useState("");
@@ -201,7 +202,7 @@ export default function GuruHasil() {
       setKoreksiResult(null);
       fetchResults();
     } else {
-      setError(r.message);
+      notif.addNotification({ type: "error", message: r.message });
     }
   };
 
@@ -211,7 +212,7 @@ export default function GuruHasil() {
     if (r.success) {
       fetchResults();
     } else {
-      setError(r.message);
+      notif.addNotification({ type: "error", message: r.message });
     }
   };
 
@@ -243,12 +244,6 @@ export default function GuruHasil() {
               <h2 style={{ fontSize: 17 }}>Hasil Ujian</h2>
               <Icon name="chart" size={20} style={{ color: "#b89440" }} />
             </div>
-
-            {error && (
-              <div style={{ background: "rgba(208,53,53,0.1)", border: "1px solid rgba(208,53,53,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#b02020", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>
-                <Icon name="warning" size={14} style={{ verticalAlign: "middle", marginRight: 4 }} /> {error}
-              </div>
-            )}
 
             <div className="toolbar">
               <select className="toolbar-filter" value={selectedKodeSoal} onChange={(e) => setSelectedKodeSoal(e.target.value)}>

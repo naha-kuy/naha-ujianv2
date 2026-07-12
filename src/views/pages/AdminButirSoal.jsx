@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getCurrentUser, logout } from "../../controllers/AuthController";
+import { useNotification } from "../../contexts/NotificationContext";
 import { getButirSoalList } from "../../controllers/SoalController";
 import AdminSidebar from "../components/sidebars/AdminSidebar";
 import Icon from "../components/Icon";
@@ -36,15 +37,15 @@ export default function AdminButirSoalReadOnly() {
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const notif = useNotification();
 
   const handleLogout = () => { logout(); navigate("/"); };
 
   const fetchData = useCallback(async () => {
     if (!kode_soal) return;
-    setLoading(true); setError("");
+    setLoading(true);
     const r = await getButirSoalList(kode_soal);
-    if (r.success) setData(r.data); else setError(r.message);
+    if (r.success) setData(r.data); else notif.addNotification("error", r.message);
     setLoading(false);
   }, [kode_soal]);
 
@@ -83,8 +84,6 @@ export default function AdminButirSoalReadOnly() {
       <AdminSidebar userName={user?.name} onLogout={handleLogout} />
       <main className="dash-main">
         <div className="dash-content">
-          {error && <div className="alert-anim" style={{ background: "rgba(208,53,53,0.1)", border: "1px solid rgba(208,53,53,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#b02020", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>{error}</div>}
-
           <div className="welcome-card" style={{ padding: "16px 20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <div>

@@ -298,6 +298,14 @@ export default function LoginPage() {
                       Hubungi Admin via WhatsApp
                     </a>
                   )}
+                  {error.action?.type === "gmail" && (
+                    <a href="https://mail.google.com/" target="_blank" rel="noopener noreferrer" className="btn-gmail">
+                      <svg className="gmail-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.91 12 9.818l6.545-4.91 1.528-1.417C21.691 2.28 24 3.434 24 5.457z"/>
+                      </svg>
+                      Buka Gmail
+                    </a>
+                  )}
                 </div>
               )}
 

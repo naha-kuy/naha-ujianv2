@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNotification } from "../../contexts/NotificationContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getCurrentUser } from "../../controllers/AuthController";
 import { getSoalByKodeSoal, getButirSoalList } from "../../controllers/SoalController";
@@ -16,7 +17,7 @@ export default function SoalPreview() {
   const role = user?.role === "admin" ? "admin" : "guru";
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const notif = useNotification();
   const [soal, setSoal] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -25,14 +26,14 @@ export default function SoalPreview() {
   const [showSidebar, setShowSidebar] = useState(true);
 
   useEffect(() => {
-    if (!kode_soal) { setError("Kode soal tidak ditemukan"); setLoading(false); return; }
+    if (!kode_soal) { notif.addNotification("error", "Kode soal tidak ditemukan"); setLoading(false); return; }
     (async () => {
       const s = await getSoalByKodeSoal(kode_soal);
-      if (!s.success) { setError(s.message); setLoading(false); return; }
+      if (!s.success) { notif.addNotification("error", s.message); setLoading(false); return; }
       setSoal(s.data);
       const b = await getButirSoalList(kode_soal);
       if (b.success) setQuestions(b.data);
-      else { setError(b.message); }
+      else { notif.addNotification("error", b.message); }
       setLoading(false);
     })();
   }, [kode_soal]);
@@ -322,11 +323,6 @@ export default function SoalPreview() {
         {/* Content */}
         {loading ? (
           <div style={{ padding: 80 }}><TableSkeleton rows={5} cols={1} /></div>
-        ) : error ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#b02020" }}>
-            <p>{error}</p>
-            <button className="btn-primary" onClick={() => navigate(role === "admin" ? "/admin/bank-soal" : "/guru/bank-soal")}>Kembali</button>
-          </div>
         ) : questions.length === 0 ? (
           <div style={{ padding: 40, textAlign: "center", color: "#9a7a30" }}>
             <p>Belum ada butir soal.</p>

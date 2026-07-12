@@ -255,15 +255,6 @@ export async function submitJawaban(kode_soal, jawaban, waktu_sisa) {
   // Calculate score
   const questions = soal.butir_soal || [];
   const hasil = koreksiOtomatis(jawaban, questions);
-  const jawabanSiswaRaw = questions
-    .map((q) => {
-      const raw = jawaban[q.nomer_soal];
-      const val = raw !== undefined && raw !== null
-        ? (Array.isArray(raw) ? raw.map(toLetter).join("|") : normalizeAnswer(raw))
-        : "";
-      return `[${q.nomer_soal}:${val}]`;
-    })
-    .join(",");
 
   // Save result
   const { error: nilaiError } = await supabase.from("nilai").insert({
@@ -271,7 +262,6 @@ export async function submitJawaban(kode_soal, jawaban, waktu_sisa) {
     kode_soal,
     jawaban,
     jawaban_benar: soal.kunci,
-    jawaban_siswa_raw: jawabanSiswaRaw,
     jumlah_soal: hasil.total,
     jumlah_benar: hasil.benar,
     jumlah_salah: hasil.salah,

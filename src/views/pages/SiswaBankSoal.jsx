@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, logout } from "../../controllers/AuthController";
 import { getSoalList } from "../../controllers/SoalController";
+import { useNotification } from "../../contexts/NotificationContext";
 import SiswaSidebar from "../components/sidebars/SiswaSidebar";
 import Icon from "../components/Icon";
 import { TableSkeleton } from "../components/Skeleton";
@@ -27,7 +28,7 @@ export default function SiswaBankSoal() {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const notif = useNotification();
   const [search, setSearch] = useState("");
   const [kelasFilter, setKelasFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -38,9 +39,9 @@ export default function SiswaBankSoal() {
   const handleLogout = () => { logout(); navigate("/"); };
 
   const fetchData = useCallback(async () => {
-    setLoading(true); setError("");
+    setLoading(true);
     const r = await getSoalList();
-    if (r.success) setData(r.data); else setError(r.message);
+    if (r.success) setData(r.data); else notif.addNotification("error", r.message);
     setLoading(false);
   }, []);
 
@@ -73,8 +74,6 @@ export default function SiswaBankSoal() {
       <SiswaSidebar userName={user?.name} onLogout={handleLogout} />
       <main className="dash-main">
         <div className="dash-content">
-          {error && <div className="alert-anim" style={{ background: "rgba(208,53,53,0.1)", border: "1px solid rgba(208,53,53,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#b02020", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>{error}</div>}
-
           <div className="welcome-card" style={{ padding: "16px 20px" }}>
             <h1 style={{ fontSize: 18, marginBottom: 12 }}>Bank Soal</h1>
 

@@ -10,6 +10,7 @@ import Icon from "../components/Icon";
 import { TableSkeleton } from "../components/Skeleton";
 import ModalEditGuru from "../components/modal/ModalEditGuru";
 import ModalTambahGuru from "../components/modal/ModalTambahGuru";
+import { useNotification } from "../../contexts/NotificationContext";
 
 function formatDate(d) {
   if (!d) return "-";
@@ -19,32 +20,13 @@ function formatDate(d) {
   });
 }
 
-function msgBox(msg, cls, onClose) {
-  if (!msg) return null;
-  return (
-    <div key={msg + cls} className="alert-anim" style={{
-      marginBottom: 12,
-      background: cls === "err" ? "rgba(208,53,53,0.1)" : "rgba(30,80,16,0.08)",
-      border: cls === "err" ? "1px solid rgba(208,53,53,0.2)" : "1px solid rgba(30,80,16,0.15)",
-      borderRadius: 8, padding: "10px 14px", fontSize: 12,
-      color: cls === "err" ? "#b02020" : "#1e5010",
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      fontWeight: 600,
-    }}>
-      <span>{msg}</span>
-      {onClose && <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}><Icon name="x" size={14} /></button>}
-    </div>
-  );
-}
-
 export default function AdminGuru() {
   const user = getCurrentUser();
   const navigate = useNavigate();
+  const notif = useNotification();
   const [pending, setPending] = useState([]);
   const [registered, setRegistered] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
 
   // pending search
@@ -63,24 +45,23 @@ export default function AdminGuru() {
   const handleLogout = () => { logout(); navigate("/"); };
 
   const handleAdd = async (form) => {
-    setSaving(true); setError(""); setSuccess("");
+    setSaving(true);
     const r = await createTeacher(form);
     setSaving(false);
     if (r.success) {
-      setSuccess(`Guru "${form.name}" berhasil ditambahkan!`);
+      notif.addNotification("success", `Guru "${form.name}" berhasil ditambahkan!`);
       setShowAdd(false);
       await fetchData();
     } else {
-      setError(r.message);
+      notif.addNotification("error", r.message);
     }
   };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    setError("");
     const [p, r] = await Promise.all([getPendingTeachers(), getRegisteredTeachers()]);
-    if (p.success) setPending(p.data); else setError(p.message);
-    if (r.success) setRegistered(r.data); else setError(r.message);
+    if (p.success) setPending(p.data); else notif.addNotification("error", p.message);
+    if (r.success) setRegistered(r.data); else notif.addNotification("error", r.message);
     setLoading(false);
   }, []);
 
@@ -108,14 +89,13 @@ export default function AdminGuru() {
 
   const act = async (id, fn, msg) => {
     setActionLoading(id);
-    setError(""); setSuccess("");
     const r = await fn(id);
     setActionLoading(null);
     if (r.success) {
-      setSuccess(msg);
+      notif.addNotification("success", msg);
       setPending((prev) => prev.filter((u) => u.id !== id));
     } else {
-      setError(r.message);
+      notif.addNotification("error", r.message);
     }
   };
 
@@ -139,8 +119,8 @@ export default function AdminGuru() {
       if (r.success) ok++; else fail++;
     }
     setPending((prev) => prev.filter((u) => !selectedPending.has(u.id)));
-    if (fail === 0) setSuccess(`${ok} guru berhasil disetujui!`);
-    else setError(`${ok} berhasil, ${fail} gagal.`);
+    if (fail === 0) notif.addNotification("success", `${ok} guru berhasil disetujui!`);
+    else notif.addNotification("error", `${ok} berhasil, ${fail} gagal.`);
     setSelectedPending(new Set());
     await fetchData();
   };
@@ -151,8 +131,8 @@ export default function AdminGuru() {
       if (r.success) ok++; else fail++;
     }
     setPending((prev) => prev.filter((u) => !selectedPending.has(u.id)));
-    if (fail === 0) setSuccess(`${ok} pendaftaran ditolak.`);
-    else setError(`${ok} berhasil, ${fail} gagal.`);
+    if (fail === 0) notif.addNotification("success", `${ok} pendaftaran ditolak.`);
+    else notif.addNotification("error", `${ok} berhasil, ${fail} gagal.`);
     setSelectedPending(new Set());
   };
 
@@ -160,14 +140,13 @@ export default function AdminGuru() {
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Hapus guru "${name}"? Tindakan ini tidak bisa dibatalkan.`)) return;
     setActionLoading(id);
-    setError(""); setSuccess("");
     const r = await deleteUser(id);
     setActionLoading(null);
     if (r.success) {
-      setSuccess(`Guru "${name}" berhasil dihapus.`);
+      notif.addNotification("success", `Guru "${name}" berhasil dihapus.`);
       setRegistered((prev) => prev.filter((u) => u.id !== id));
     } else {
-      setError(r.message);
+      notif.addNotification("error", r.message);
     }
   };
 
@@ -178,11 +157,10 @@ export default function AdminGuru() {
   };
   const saveEdit = async () => {
     if (!editForm.name.trim() || !editForm.username.trim()) {
-      setError("Nama dan username wajib diisi.");
+      notif.addNotification("error", "Nama dan username wajib diisi.");
       return;
     }
     setSaving(true);
-    setError(""); setSuccess("");
     const r = await updateUser(editing, {
       name: editForm.name.trim(),
       username: editForm.username.trim(),
@@ -191,12 +169,12 @@ export default function AdminGuru() {
     });
     setSaving(false);
     if (r.success) {
-      setSuccess("Data guru berhasil diperbarui.");
+      notif.addNotification("success", "Data guru berhasil diperbarui.");
       setEditing(null);
       setEditForm({});
       await fetchData();
     } else {
-      setError(r.message);
+      notif.addNotification("error", r.message);
     }
   };
   const cancelEdit = () => { setEditing(null); setEditForm({}); };
@@ -222,9 +200,6 @@ export default function AdminGuru() {
       <AdminSidebar userName={user?.name} onLogout={handleLogout} />
       <main className="dash-main">
         <div className="dash-content">
-          {error && msgBox(error, "err", () => setError(""))}
-          {success && msgBox(success, "ok", () => setSuccess(""))}
-
           {/* ───── Section 1: Pending Teachers ───── */}
           <div className="welcome-card" style={{ padding: "16px 20px", marginBottom: 24 }}>
             <h2 style={{ fontSize: 17, marginBottom: 4 }}>Calon Guru — Menunggu Persetujuan</h2>

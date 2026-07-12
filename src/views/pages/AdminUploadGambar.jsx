@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useNotification } from "../../contexts/NotificationContext";
 import { getCurrentUser, logout } from "../../controllers/AuthController";
 import { uploadImage, getImageList, deleteImage } from "../../controllers/ExamController";
 import AdminSidebar from "../components/sidebars/AdminSidebar";
@@ -14,15 +15,14 @@ export default function AdminUploadGambar() {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const notif = useNotification();
   const [preview, setPreview] = useState(null);
 
   const fetchImages = async () => {
     setLoading(true);
     const r = await getImageList("umum");
     if (r.success) setImages(r.data);
-    else setError(r.message);
+    else notif.addNotification("error", r.message);
     setLoading(false);
   };
 
@@ -31,15 +31,15 @@ export default function AdminUploadGambar() {
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setUploading(true); setError(""); setSuccess("");
+    setUploading(true);
     const r = await uploadImage(file, "umum");
     setUploading(false);
     if (r.success) {
-      setSuccess("Gambar berhasil diupload!");
+      notif.addNotification("success", "Gambar berhasil diupload!");
       fetchImages();
       if (fileRef.current) fileRef.current.value = "";
     } else {
-      setError(r.message);
+      notif.addNotification("error", r.message);
     }
   };
 
@@ -47,16 +47,16 @@ export default function AdminUploadGambar() {
     if (!window.confirm(`Hapus "${name}"?`)) return;
     const r = await deleteImage(path);
     if (r.success) {
-      setSuccess("Gambar dihapus");
+      notif.addNotification("success", "Gambar dihapus");
       fetchImages();
     } else {
-      setError(r.message);
+      notif.addNotification("error", r.message);
     }
   };
 
   const copyUrl = (url) => {
     navigator.clipboard.writeText(url);
-    setSuccess("URL disalin!");
+    notif.addNotification("success", "URL disalin!");
   };
 
   return (
@@ -64,17 +64,6 @@ export default function AdminUploadGambar() {
       <AdminSidebar userName={user?.name} onLogout={handleLogout} />
       <main className="dash-main">
         <div className="dash-content">
-          {error && (
-            <div style={{ background: "rgba(208,53,53,0.1)", border: "1px solid rgba(208,53,53,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#b02020", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>
-              <Icon name="warning" size={14} style={{ verticalAlign: "middle", marginRight: 4 }} /> {error}
-            </div>
-          )}
-          {success && (
-            <div style={{ background: "rgba(30,80,16,0.08)", border: "1px solid rgba(30,80,16,0.15)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#1e5010", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>
-              {success}
-            </div>
-          )}
-
           <div className="welcome-card" style={{ padding: "20px 24px" }}>
             <h2 style={{ fontSize: 17, marginBottom: 4 }}>Upload Gambar</h2>
             <p style={{ fontSize: 12, color: "#9a7a30", marginBottom: 16 }}>Upload gambar untuk digunakan di soal (max 2MB, format: JPG, PNG, GIF, WebP)</p>

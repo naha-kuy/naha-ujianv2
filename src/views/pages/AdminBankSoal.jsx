@@ -5,6 +5,7 @@ import {
   getSoalList, updateSoal, deleteSoal,
   toggleSoalStatus, getSoalCounts, generateSoalToken,
 } from "../../controllers/SoalController";
+import { useNotification } from "../../contexts/NotificationContext";
 import AdminSidebar from "../components/sidebars/AdminSidebar";
 import Icon from "../components/Icon";
 import { TableSkeleton } from "../components/Skeleton";
@@ -39,11 +40,10 @@ function emptyState(msg, icon = "document") {
 export default function AdminBankSoal() {
   const user = getCurrentUser();
   const navigate = useNavigate();
+  const notif = useNotification();
   const [data, setData] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [search, setSearch] = useState("");
   const [kelasFilter, setKelasFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -61,9 +61,8 @@ export default function AdminBankSoal() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    setError("");
     const [r, s] = await Promise.all([getSoalList(), getSoalCounts()]);
-    if (r.success) setData(r.data); else setError(r.message);
+    if (r.success) setData(r.data); else notif.addNotification("error", r.message);
     if (s.success) setStats(s.data);
     setLoading(false);
   }, []);
@@ -93,7 +92,7 @@ export default function AdminBankSoal() {
   useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
 
   const openEdit = (soal) => {
-    if (soal.status === "Aktif") { setError("Tidak bisa mengedit soal yang aktif"); return; }
+    if (soal.status === "Aktif") { notif.addNotification("error", "Tidak bisa mengedit soal yang aktif"); return; }
     setEditId(soal.id_soal);
     setForm({
       kode_soal: soal.kode_soal,
@@ -113,46 +112,46 @@ export default function AdminBankSoal() {
 
   const handleSave = async () => {
     if (!form.nama_soal.trim() || !form.kode_soal.trim() || !form.mapel.trim() || (!form.kelas.trim() && !form.semua_kelas)) {
-      setError("Semua field wajib diisi"); return;
+      notif.addNotification("error", "Semua field wajib diisi"); return;
     }
-    setSaving(true); setError(""); setSuccess("");
+    setSaving(true);
     const r = await updateSoal(editId, form);
     setSaving(false);
     if (r.success) {
-      setSuccess("Soal berhasil diperbarui");
+      notif.addNotification("success", "Soal berhasil diperbarui");
       setShowForm(false);
       await fetchData();
     } else {
-      setError(r.message);
+      notif.addNotification("error", r.message);
     }
   };
 
   const handleDelete = async (soal) => {
-    if (soal.status === "Aktif") { setError("Tidak bisa menghapus soal yang aktif"); return; }
+    if (soal.status === "Aktif") { notif.addNotification("error", "Tidak bisa menghapus soal yang aktif"); return; }
     if (!window.confirm(`Hapus soal "${soal.nama_soal}"? Semua butir soal akan ikut terhapus.`)) return;
-    setActionLoading(soal.kode_soal); setError(""); setSuccess("");
+    setActionLoading(soal.kode_soal);
     const r = await deleteSoal(soal.kode_soal);
     setActionLoading(null);
-    if (r.success) { setSuccess("Soal berhasil dihapus"); await fetchData(); }
-    else setError(r.message);
+    if (r.success) { notif.addNotification("success", "Soal berhasil dihapus"); await fetchData(); }
+    else notif.addNotification("error", r.message);
   };
 
   const handleToggle = async (id, action) => {
-    setActionLoading(id); setError(""); setSuccess("");
+    setActionLoading(id);
     const r = await toggleSoalStatus(id, action);
     setActionLoading(null);
     if (r.success) {
-      setSuccess(action === "aktif" ? "Soal diaktifkan" : "Soal dinonaktifkan");
+      notif.addNotification("success", action === "aktif" ? "Soal diaktifkan" : "Soal dinonaktifkan");
       await fetchData();
-    } else setError(r.message);
+    } else notif.addNotification("error", r.message);
   };
 
   const handleGenToken = async (id) => {
-    setActionLoading(id); setError(""); setSuccess("");
+    setActionLoading(id);
     const r = await generateSoalToken(id);
     setActionLoading(null);
-    if (r.success) { setSuccess(`Token baru: ${r.token}`); await fetchData(); }
-    else setError(r.message);
+    if (r.success) { notif.addNotification("success", `Token baru: ${r.token}`); await fetchData(); }
+    else notif.addNotification("error", r.message);
   };
 
   // ── Render ──
@@ -161,9 +160,6 @@ export default function AdminBankSoal() {
       <AdminSidebar userName={user?.name} onLogout={handleLogout} />
       <main className="dash-main">
         <div className="dash-content">
-          {error && <div className="alert-anim" style={{ background: "rgba(208,53,53,0.1)", border: "1px solid rgba(208,53,53,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#b02020", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>{error}</div>}
-          {success && <div className="alert-anim" style={{ background: "rgba(30,80,16,0.08)", border: "1px solid rgba(30,80,16,0.15)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#1e5010", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>{success}</div>}
-
           {loading ? (
             <div className="welcome-card">
               <h1 style={{ fontSize: 18, marginBottom: 12 }}>Bank Soal</h1>

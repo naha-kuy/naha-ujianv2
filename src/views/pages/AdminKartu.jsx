@@ -68,7 +68,6 @@ export default function AdminKartu() {
               <tr><td>Nama</td><td>:</td><td>${s.name}</td></tr>
               <tr><td>Kelas</td><td>:</td><td>${s.kelas || "-"}${s.student_group || ""}</td></tr>
               <tr><td>Username</td><td>:</td><td>${s.username}</td></tr>
-              <tr><td>Password</td><td>:</td><td>${s.password_shown || "(belum diset)"}</td></tr>
             </table>
           </div>`;
       });
@@ -153,7 +152,6 @@ ${cardsHtml}
                               <tr><td style={{ width: "35%", color: "#9a7a30" }}>Nama</td><td>:</td><td><strong>{s.name}</strong></td></tr>
                               <tr><td style={{ color: "#9a7a30" }}>Kelas</td><td>:</td><td>{s.kelas || "-"}{s.student_group || ""}</td></tr>
                               <tr><td style={{ color: "#9a7a30" }}>Username</td><td>:</td><td>{s.username}</td></tr>
-                              <tr><td style={{ color: "#9a7a30" }}>Password</td><td>:</td><td>{s.password_shown || "(belum diset)"}</td></tr>
                             </tbody>
                           </table>
                         </div>

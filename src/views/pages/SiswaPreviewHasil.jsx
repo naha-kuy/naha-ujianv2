@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getCurrentUser, logout } from "../../controllers/AuthController";
 import { getResultDetail } from "../../controllers/ExamController";
+import { useNotification } from "../../contexts/NotificationContext";
 import SiswaSidebar from "../components/sidebars/SiswaSidebar";
 import Icon from "../components/Icon";
 import { TableSkeleton } from "../components/Skeleton";
@@ -20,7 +21,7 @@ export default function SiswaPreviewHasil() {
   const handleLogout = () => { logout(); navigate("/"); };
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const notif = useNotification();
   const [data, setData] = useState(null);
   const [activePage, setActivePage] = useState("result");
 
@@ -33,7 +34,7 @@ export default function SiswaPreviewHasil() {
       if (r.success) {
         setData(r.data);
       } else {
-        setError(r.message);
+        notif.addNotification("error", r.message);
       }
       setLoading(false);
     })();
@@ -46,12 +47,6 @@ export default function SiswaPreviewHasil() {
       <SiswaSidebar userName={user?.name} onLogout={handleLogout} />
       <main className="dash-main">
         <div className="dash-content">
-          {error && (
-            <div style={{ background: "rgba(208,53,53,0.1)", border: "1px solid rgba(208,53,53,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#b02020", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>
-              <Icon name="warning" size={14} style={{ verticalAlign: "middle", marginRight: 4 }} /> {error}
-            </div>
-          )}
-
           {loading ? (
             <div className="welcome-card"><TableSkeleton rows={4} cols={2} /></div>
           ) : data ? (

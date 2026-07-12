@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNotification } from "../../contexts/NotificationContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getCurrentUser } from "../../controllers/AuthController";
 import {
@@ -25,7 +26,8 @@ export default function SiswaEngineUjian() {
   const kode_soal = params.get("kode_soal");
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const notif = useNotification();
+  const [error, setError] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [jawaban, setJawaban] = useState({});
@@ -58,7 +60,7 @@ export default function SiswaEngineUjian() {
         getExamQuestions(kode_soal),
       ]);
 
-      if (!questR.success) { setError(questR.message); setLoading(false); return; }
+      if (!questR.success) { setError(questR.message); notif.addNotification("error", questR.message); setLoading(false); return; }
       setQuestions(questR.data);
 
       if (sesiR.success && sesiR.data) {
@@ -203,7 +205,7 @@ export default function SiswaEngineUjian() {
     if (r.success) {
       navigate(`/siswa/hasil/detail?kode_soal=${kode_soal}`);
     } else {
-      setError(r.message);
+      setError(r.message); notif.addNotification("error", r.message);
     }
   };
   const handleSubmitRef = useRef(handleSubmit);

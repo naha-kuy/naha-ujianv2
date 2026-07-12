@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getCurrentUser, logout } from "../../controllers/AuthController";
 import { getMonitoringData, getOnlineStudents, getActivityLogs, forceSave, setForceLogout } from "../../controllers/ExamController";
 import { getSoalList } from "../../controllers/SoalController";
+import { useNotification } from "../../contexts/NotificationContext";
 import AdminSidebar from "../components/sidebars/AdminSidebar";
 import Icon from "../components/Icon";
 import { TableSkeleton } from "../components/Skeleton";
@@ -13,7 +14,7 @@ export default function AdminMonitoring() {
   const handleLogout = () => { logout(); navigate("/"); };
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const notif = useNotification();
   const [exams, setExams] = useState([]);
   const [monitoring, setMonitoring] = useState([]);
   const [onlineStudents, setOnlineStudents] = useState([]);
@@ -84,7 +85,7 @@ export default function AdminMonitoring() {
     if (r.success) {
       fetchData(selectedKodeSoal, selectedKelas);
     } else {
-      setError(r.message);
+      notif.addNotification("error", r.message);
     }
   };
 
@@ -94,7 +95,7 @@ export default function AdminMonitoring() {
     if (r.success) {
       fetchData(selectedKodeSoal, selectedKelas);
     } else {
-      setError(r.message);
+      notif.addNotification("error", r.message);
     }
   };
 
@@ -129,12 +130,6 @@ export default function AdminMonitoring() {
               <h2 style={{ fontSize: 17 }}>Monitoring Ujian Real-time</h2>
               <Icon name="monitor" size={20} style={{ color: "#b89440" }} />
             </div>
-
-            {error && (
-              <div style={{ background: "rgba(208,53,53,0.1)", border: "1px solid rgba(208,53,53,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#b02020", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>
-                <Icon name="warning" size={14} style={{ verticalAlign: "middle", marginRight: 4 }} /> {error}
-              </div>
-            )}
 
             <div className="toolbar">
               <select className="toolbar-filter" value={selectedKodeSoal} onChange={(e) => setSelectedKodeSoal(e.target.value)}>

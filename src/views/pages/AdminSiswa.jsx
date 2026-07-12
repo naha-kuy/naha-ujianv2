@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useNotification } from "../../contexts/NotificationContext";
 import { useNavigate } from "react-router-dom";
 import {
   getCurrentUser, logout,
@@ -18,31 +19,12 @@ function formatDate(d) {
   });
 }
 
-function msgBox(msg, cls, onClose) {
-  if (!msg) return null;
-  return (
-    <div key={msg + cls} className="alert-anim" style={{
-      marginBottom: 12,
-      background: cls === "err" ? "rgba(208,53,53,0.1)" : "rgba(30,80,16,0.08)",
-      border: cls === "err" ? "1px solid rgba(208,53,53,0.2)" : "1px solid rgba(30,80,16,0.15)",
-      borderRadius: 8, padding: "10px 14px", fontSize: 12,
-      color: cls === "err" ? "#b02020" : "#1e5010",
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      fontWeight: 600,
-    }}>
-      <span>{msg}</span>
-      {onClose && <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}><Icon name="x" size={14} /></button>}
-    </div>
-  );
-}
-
 export default function AdminSiswa() {
   const user = getCurrentUser();
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const notif = useNotification();
   const [search, setSearch] = useState("");
   const [kelasFilter, setKelasFilter] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
@@ -58,22 +40,22 @@ export default function AdminSiswa() {
   const handleLogout = () => { logout(); navigate("/"); };
 
   const handleAdd = async (form) => {
-    setSaving(true); setError(""); setSuccess("");
+    setSaving(true);
     const r = await createStudent(form);
     setSaving(false);
     if (r.success) {
-      setSuccess(`Siswa "${form.name}" berhasil ditambahkan!`);
+      notif.addNotification("success", `Siswa "${form.name}" berhasil ditambahkan!`);
       setShowAdd(false);
       await fetchData();
     } else {
-      setError(r.message);
+      notif.addNotification("error", r.message);
     }
   };
 
   const fetchData = useCallback(async () => {
-    setLoading(true); setError("");
+    setLoading(true);
     const r = await getRegisteredStudents();
-    if (r.success) setStudents(r.data); else setError(r.message);
+    if (r.success) setStudents(r.data); else notif.addNotification("error", r.message);
     setLoading(false);
   }, []);
 
@@ -100,14 +82,14 @@ export default function AdminSiswa() {
   // delete
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Hapus siswa "${name}"? Tindakan ini tidak bisa dibatalkan.`)) return;
-    setActionLoading(id); setError(""); setSuccess("");
+    setActionLoading(id);
     const r = await deleteUser(id);
     setActionLoading(null);
     if (r.success) {
-      setSuccess(`Siswa "${name}" berhasil dihapus.`);
+      notif.addNotification("success", `Siswa "${name}" berhasil dihapus.`);
       setStudents((prev) => prev.filter((u) => u.id !== id));
     } else {
-      setError(r.message);
+      notif.addNotification("error", r.message);
     }
   };
 
@@ -124,9 +106,9 @@ export default function AdminSiswa() {
   };
   const saveEdit = async () => {
     if (!editForm.name.trim() || !editForm.username.trim()) {
-      setError("Nama dan username wajib diisi."); return;
+      notif.addNotification("error", "Nama dan username wajib diisi."); return;
     }
-    setSaving(true); setError(""); setSuccess("");
+    setSaving(true);
     const r = await updateUser(editing, {
       name: editForm.name.trim(),
       username: editForm.username.trim(),
@@ -136,11 +118,11 @@ export default function AdminSiswa() {
     });
     setSaving(false);
     if (r.success) {
-      setSuccess("Data siswa berhasil diperbarui.");
+      notif.addNotification("success", "Data siswa berhasil diperbarui.");
       setEditing(null); setEditForm({});
       await fetchData();
     } else {
-      setError(r.message);
+      notif.addNotification("error", r.message);
     }
   };
   const cancelEdit = () => { setEditing(null); setEditForm({}); };
@@ -150,9 +132,6 @@ export default function AdminSiswa() {
       <AdminSidebar userName={user?.name} onLogout={handleLogout} />
       <main className="dash-main">
         <div className="dash-content">
-          {error && msgBox(error, "err", () => setError(""))}
-          {success && msgBox(success, "ok", () => setSuccess(""))}
-
           {loading ? (
             <div className="welcome-card">
               <h1 style={{ fontSize: 18, marginBottom: 12 }}>Manajemen Siswa</h1>
@@ -201,7 +180,6 @@ export default function AdminSiswa() {
                         <th>No</th>
                         <th>Nama</th>
                         <th>Username</th>
-                        <th>Password</th>
                         <th>Email</th>
                         <th>Kelas</th>
                         <th>Kelompok</th>
@@ -216,7 +194,6 @@ export default function AdminSiswa() {
                           <td>{i + 1}</td>
                           <td className="td-name">{u.name}</td>
                           <td>@{u.username}</td>
-                          <td style={{ fontSize: 11, fontFamily: "monospace", color: "#5a3a00" }}>{u.password_shown || "—"}</td>
                           <td style={{ fontSize: 12, color: "#7a5a20" }}>{u.email || "-"}</td>
                           <td>{u.kelas || "-"}</td>
                           <td>{u.student_group || "-"}</td>

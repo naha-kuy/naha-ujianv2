@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, logout } from "../../controllers/AuthController";
 import { getStudentResults } from "../../controllers/ExamController";
+import { useNotification } from "../../contexts/NotificationContext";
 import SiswaSidebar from "../components/sidebars/SiswaSidebar";
 import Icon from "../components/Icon";
 import { TableSkeleton } from "../components/Skeleton";
@@ -22,14 +23,14 @@ export default function SiswaHasil() {
 
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const notif = useNotification();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    setError("");
+
     const r = await getStudentResults();
     if (r.success) setResults(r.data);
-    else setError(r.message);
+    else notif.addNotification("error", r.message);
     setLoading(false);
   }, []);
 
@@ -40,12 +41,6 @@ export default function SiswaHasil() {
       <SiswaSidebar userName={user?.name} onLogout={handleLogout} />
       <main className="dash-main">
         <div className="dash-content">
-          {error && (
-            <div style={{ background: "rgba(208,53,53,0.1)", border: "1px solid rgba(208,53,53,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#b02020", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>
-              <Icon name="warning" size={14} style={{ verticalAlign: "middle", marginRight: 4 }} /> {error}
-            </div>
-          )}
-
           <div className="welcome-card" style={{ padding: "16px 20px" }}>
             <h2 style={{ fontSize: 17, marginBottom: 4 }}>Hasil Ujian</h2>
             <p style={{ fontSize: 12, color: "#9a7a30", marginBottom: 12 }}>

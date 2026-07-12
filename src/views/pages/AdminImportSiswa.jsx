@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { getCurrentUser, logout, createStudent } from "../../controllers/AuthController";
+import { useNotification } from "../../contexts/NotificationContext";
 import AdminSidebar from "../components/sidebars/AdminSidebar";
 import Icon from "../components/Icon";
 
@@ -16,7 +17,7 @@ export default function AdminImportSiswa() {
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [result, setResult] = useState(null);
-  const [error, setError] = useState("");
+  const notif = useNotification();
 
   const downloadTemplate = () => {
     const wb = XLSX.utils.book_new();
@@ -34,7 +35,6 @@ export default function AdminImportSiswa() {
     const f = e.target.files[0];
     if (!f) return;
     setFile(f);
-    setError("");
     setResult(null);
 
     const reader = new FileReader();
@@ -45,7 +45,7 @@ export default function AdminImportSiswa() {
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
         if (rows.length < 2) {
-          setError("File Excel kosong atau tidak memiliki data");
+          notif.addNotification("error", "File Excel kosong atau tidak memiliki data");
           return;
         }
 
@@ -65,13 +65,13 @@ export default function AdminImportSiswa() {
         }
 
         if (parsed.length === 0) {
-          setError("Tidak ada data valid ditemukan. Pastikan format sesuai template.");
+          notif.addNotification("error", "Tidak ada data valid ditemukan. Pastikan format sesuai template.");
           return;
         }
 
         setPreview(parsed);
       } catch (err) {
-        setError("Gagal membaca file Excel: " + err.message);
+        notif.addNotification("error", "Gagal membaca file Excel: " + err.message);
       }
     };
     reader.readAsArrayBuffer(f);
@@ -80,7 +80,6 @@ export default function AdminImportSiswa() {
   const doImport = async () => {
     if (preview.length === 0) return;
     setImporting(true);
-    setError("");
     setResult(null);
 
     let berhasil = 0;
@@ -121,7 +120,6 @@ export default function AdminImportSiswa() {
     setFile(null);
     setPreview([]);
     setResult(null);
-    setError("");
     setProgress({ current: 0, total: 0 });
     if (fileRef.current) fileRef.current.value = "";
   };
@@ -131,12 +129,6 @@ export default function AdminImportSiswa() {
       <AdminSidebar userName={user?.name} onLogout={handleLogout} />
       <main className="dash-main">
         <div className="dash-content" style={{ maxWidth: 800 }}>
-          {error && (
-            <div className="alert-anim" style={{ background: "rgba(208,53,53,0.1)", border: "1px solid rgba(208,53,53,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#b02020", textAlign: "center", fontWeight: 600, marginBottom: 12 }}>
-              <Icon name="warning" size={14} style={{ verticalAlign: "middle", marginRight: 4 }} /> {error}
-            </div>
-          )}
-
           {result && (
             <div className="alert-anim" style={{
               marginBottom: 12, borderRadius: 8, padding: "12px 16px", fontSize: 12,
