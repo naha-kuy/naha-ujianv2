@@ -4,12 +4,6 @@ import { login, register } from "../../controllers/AuthController";
 
 import Icon from "../components/Icon";
 
-const roleInfo = {
-  admin: { label: "Admin", emoji: "shield", iconSize: 14 },
-  guru: { label: "Guru", emoji: "book", iconSize: 14 },
-  siswa: { label: "Siswa", emoji: "graduation", iconSize: 14 },
-};
-
 const roleOpts = [
   { value: "siswa", label: "Siswa", emoji: "graduation", iconSize: 16 },
   { value: "guru", label: "Guru", emoji: "book", iconSize: 16 },
@@ -40,9 +34,8 @@ export default function LoginPage() {
   }, [error]);
 
   // Login fields
-  const [lUser, setLUser] = useState("");
+  const [lEmail, setLEmail] = useState("");
   const [lPass, setLPass] = useState("");
-  const [selRole, setSelRole] = useState(null);
 
   // Register fields
   const [reg, setReg] = useState({
@@ -51,7 +44,7 @@ export default function LoginPage() {
     mataPelajaran: "", catatan: "", kelas: "", jurusan: "", namaSekolah: "",
   });
 
-  const userInputRef = useRef(null);
+  const emailInputRef = useRef(null);
   const passInputRef = useRef(null);
 
   const triggerSteam = () => {
@@ -127,7 +120,7 @@ export default function LoginPage() {
         hasError = true;
       }
     } else {
-      if (!lUser.trim()) { setFieldError("lUser", "Username harus diisi"); hasError = true; }
+      if (!lEmail.trim()) { setFieldError("lEmail", "Email harus diisi"); hasError = true; }
       if (!lPass.trim()) { setFieldError("lPass", "Password harus diisi"); hasError = true; }
     }
 
@@ -166,7 +159,7 @@ export default function LoginPage() {
       }
       result = await register(payload);
     } else {
-      result = await login(lUser, lPass);
+      result = await login(lEmail, lPass);
     }
 
     setLoading(false);
@@ -195,7 +188,7 @@ export default function LoginPage() {
       lever?.classList.remove("pulled");
       busy.current = false;
     }
-  }, [view, lUser, lPass, reg, navigate]);
+  }, [view, lEmail, lPass, reg, navigate]);
 
   const pullAnimate = (lever) => {
     lever?.classList.add("pulled");
@@ -221,13 +214,6 @@ export default function LoginPage() {
     setStatusType("");
     setLoading(false);
     clearFieldErrors();
-  };
-
-  const toggleRole = (role) => {
-    setSelRole(role);
-    setLUser(role);
-    setLPass(role);
-    setError(null);
   };
 
   const updateReg = (field, value) => {
@@ -262,17 +248,17 @@ export default function LoginPage() {
             <div>
               <div className="card-title">Log In</div>
 
-              <div className="field-label">Username</div>
-              <div className={inputCls("lUser")}>
+              <div className="field-label">Email</div>
+              <div className={inputCls("lEmail")}>
                 <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="M22 4l-10 8L2 4" />
                 </svg>
-                <input id="lUser" type="text" value={lUser} onChange={(e) => { setLUser(e.target.value); if (fieldErrors.lUser) setFieldErrors((p) => { const n = { ...p }; delete n.lUser; return n; }); }}
-                  placeholder="Username" autoComplete="off" ref={userInputRef}
+                <input id="lEmail" type="email" value={lEmail} onChange={(e) => { setLEmail(e.target.value); if (fieldErrors.lEmail) setFieldErrors((p) => { const n = { ...p }; delete n.lEmail; return n; }); }}
+                  placeholder="Email" autoComplete="off" ref={emailInputRef}
                   onKeyDown={(e) => { if (e.key === "Enter") passInputRef.current?.focus(); }} />
               </div>
-              {fieldErrors.lUser && <div className="t-field-err">{fieldErrors.lUser}</div>}
+              {fieldErrors.lEmail && <div className="t-field-err">{fieldErrors.lEmail}</div>}
 
               <div className="field-label">Password</div>
               <div className={inputCls("lPass")}>

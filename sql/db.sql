@@ -212,6 +212,7 @@ DROP POLICY IF EXISTS "admin_read_all_profiles"      ON profiles;
 DROP POLICY IF EXISTS "admin_update_all_profiles"    ON profiles;
 DROP POLICY IF EXISTS "admin_insert_all_profiles"    ON profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "guru_read_profiles"           ON profiles;
 
 CREATE POLICY "users_read_own_profile"
   ON profiles FOR SELECT USING (auth.uid() = id);
@@ -493,23 +494,22 @@ $$;
 GRANT EXECUTE ON FUNCTION get_email_by_username TO anon;
 GRANT EXECUTE ON FUNCTION get_email_by_username TO authenticated;
 
--- 6b. admin_get_profile_by_username — untuk login flow (tetap bisa diakses anon)
---     NOTE: Masih mengembalikan password plaintext karena login flow membutuhkannya.
---     Untuk produksi, password harus di-hash dan flow login direfactor.
-CREATE OR REPLACE FUNCTION admin_get_profile_by_username(p_username TEXT)
+-- 6b. admin_get_profile_by_email — untuk login flow (bisa diakses anon)
+--     Mencari profile berdasarkan email (case-insensitive).
+CREATE OR REPLACE FUNCTION admin_get_profile_by_email(p_email TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
   result JSONB;
 BEGIN
-  SELECT to_jsonb(p) INTO result FROM public.profiles p WHERE p.username = p_username;
+  SELECT to_jsonb(p) INTO result FROM public.profiles p WHERE LOWER(p.email) = LOWER(p_email);
   RETURN result;
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION admin_get_profile_by_username TO anon;
-GRANT EXECUTE ON FUNCTION admin_get_profile_by_username TO authenticated;
+GRANT EXECUTE ON FUNCTION admin_get_profile_by_email TO anon;
+GRANT EXECUTE ON FUNCTION admin_get_profile_by_email TO authenticated;
 
 -- [FIX #1] admin_get_pending_teachers — hanya admin yang bisa
 CREATE OR REPLACE FUNCTION admin_get_pending_teachers()

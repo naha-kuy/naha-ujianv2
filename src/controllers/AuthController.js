@@ -3,6 +3,7 @@ import supabase from "../models/supabaseClient";
 const STORAGE_KEY = "auth_user";
 const PENDING_KEY = "pending_verification";
 
+
 // ── Pending Registration (belum konfirmasi email) ──
 
 export function savePendingRegistration(data) {
@@ -31,75 +32,48 @@ export function cleanExpiredPending() {
   localStorage.setItem(PENDING_KEY, JSON.stringify(active));
 }
 
-// ── RPC: ambil profile berdasarkan username (bypass RLS, tanpa autentikasi) ──
-async function getProfileByUsername(username) {
-  const { data } = await supabase.rpc("admin_get_profile_by_username", {
-    p_username: username,
+// ── RPC: ambil profile berdasarkan email (bypass RLS, tanpa autentikasi) ──
+async function getProfileByEmail(email) {
+  const { data } = await supabase.rpc("admin_get_profile_by_email", {
+    p_email: email,
   });
-  return data || null; // JSONB object atau null
+  return data || null;
 }
 
-export async function login(username, password) {
+export async function login(email, password) {
   cleanExpiredPending();
 
   try {
-    // Langkah 1: Ambil profile dari database berdasarkan username
-    const profile = await getProfileByUsername(username);
+    if (!email || !email.trim()) {
+      return { success: false, message: "Email harus diisi" };
+    }
+    if (!password || !password.trim()) {
+      return { success: false, message: "Password harus diisi" };
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Langkah 1: Ambil profile dari database berdasarkan email
+    const profile = await getProfileByEmail(normalizedEmail);
 
     if (!profile) {
-      // Tidak ada di tabel profiles → coba anggap input sebagai email langsung
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: username,
-        password,
-      });
-
-      if (authError) {
-        if (authError.message?.toLowerCase().includes("email not confirmed")) {
-          const pending = checkPendingRegistration(username);
-          if (pending) {
-            return {
-              success: false,
-              message: `Akun Anda belum diverifikasi. Silakan buka email (${pending.email}) dan klik tautan konfirmasi, lalu coba login kembali.`,
-              action: { type: "gmail" },
-            };
-          }
-          return {
-            success: false,
-            message: "Email belum diverifikasi. Silakan cek email Anda (termasuk folder spam).",
-          };
-        }
-        return { success: false, message: "Username atau password salah" };
-      }
-
-      // Berhasil login via email langsung → ambil profile via id
-      const { data: profileById } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", authData.user.id)
-        .single();
-
-      if (!profileById) {
-        await supabase.auth.signOut();
-        return { success: false, message: "Profil tidak ditemukan. Hubungi admin." };
-      }
-
-      return await _finalizeLogin(profileById);
+      return { success: false, message: "Email atau password salah" };
     }
 
     // Langkah 2: Verifikasi password plaintext dari kolom profiles.password
     if (!profile.password || profile.password !== password) {
-      return { success: false, message: "Username atau password salah" };
+      return { success: false, message: "Email atau password salah" };
     }
 
     // Langkah 3: Cek status sebelum lanjut ke Supabase Auth
     if (profile.role !== "admin") {
       if (profile.status === "pending") {
-        const pending = checkPendingRegistration(username);
+        const pending = checkPendingRegistration(profile.username);
         const roleLabel = profile.role === "guru" ? "guru" : "siswa";
         if (pending) {
           return {
             success: false,
-            message: `Akun ${roleLabel} Anda belum diverifikasi. Silakan buka email (${pending.email}) dan klik tautan konfirmasi, lalu coba login kembali.`,
+            message: `Akun ${roleLabel} Anda belum diverifikasi. Silakan buka email (${profile.email}) dan klik tautan konfirmasi, lalu coba login kembali.`,
             action: { type: "gmail" },
           };
         }
@@ -129,16 +103,15 @@ export async function login(username, password) {
       }
     }
 
-    // Langkah 4: Sign in ke Supabase Auth untuk mendapatkan session valid (diperlukan RLS)
+    // Langkah 4: Sign in ke Supabase Auth
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: profile.email,
       password,
     });
 
     if (signInError) {
-      // Email belum dikonfirmasi di Supabase Auth
       if (signInError.message?.toLowerCase().includes("email not confirmed")) {
-        const pending = checkPendingRegistration(username);
+        const pending = checkPendingRegistration(profile.username);
         if (pending) {
           return {
             success: false,
@@ -154,7 +127,6 @@ export async function login(username, password) {
       return { success: false, message: "Gagal autentikasi. Hubungi admin." };
     }
 
-    // Login sukses → hapus pending registration (jika ada)
     clearPendingRegistration(profile.username);
 
     const session = {
@@ -162,6 +134,7 @@ export async function login(username, password) {
       username: profile.username,
       role: profile.role,
       name: profile.name,
+      email: profile.email,
       provider: "supabase",
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
@@ -169,51 +142,6 @@ export async function login(username, password) {
   } catch (err) {
     return { success: false, message: "Terjadi kesalahan koneksi" };
   }
-}
-
-// Helper: finalize login setelah auth berhasil (untuk path login via email langsung)
-async function _finalizeLogin(profile) {
-  if (profile.role !== "admin") {
-    if (profile.status === "pending") {
-      await supabase.auth.signOut();
-      const roleLabel = profile.role === "guru" ? "guru" : "siswa";
-      return {
-        success: false,
-        message: `Akun ${roleLabel} Anda sedang menunggu persetujuan admin.`,
-        action: {
-          type: "whatsapp",
-          phone: import.meta.env.VITE_ADMIN_WHATSAPP || "6282334157792",
-          text:
-            profile.role === "guru"
-              ? `Halo Admin, saya ${profile.name} (${profile.username}) telah mendaftar sebagai guru. Mohon persetujuannya. Terima kasih.`
-              : `Halo Admin, saya ${profile.name} (${profile.username}) telah mendaftar sebagai siswa. Mohon persetujuannya. Terima kasih.`,
-        },
-      };
-    }
-    if (profile.status === "rejected") {
-      await supabase.auth.signOut();
-      return {
-        success: false,
-        message: "Pendaftaran ditolak. Silakan daftar ulang dengan akun berbeda.",
-        action: {
-          type: "whatsapp",
-          phone: import.meta.env.VITE_ADMIN_WHATSAPP || "6282334157792",
-          text: `Halo Admin, saya ${profile.name} (${profile.username}) ingin menanyakan penolakan pendaftaran akun saya. Mohon informasinya. Terima kasih.`,
-        },
-      };
-    }
-  }
-
-  clearPendingRegistration(profile.username);
-  const session = {
-    id: profile.id,
-    username: profile.username,
-    role: profile.role,
-    name: profile.name,
-    provider: "supabase",
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-  return { success: true, user: session };
 }
 
 export async function register({ username, email, password, name, role, ...extra }) {

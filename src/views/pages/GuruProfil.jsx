@@ -98,7 +98,7 @@ export default function GuruProfil() {
                   <input type="text" className="form-control" value={username}
                     onChange={(e) => setUsername(e.target.value)} required
                     placeholder="Masukkan username" />
-                  <div className="form-hint">Username untuk login ke sistem</div>
+                  <div className="form-hint">Username untuk identifikasi (login pakai email)</div>
                 </div>
               </div>
 
